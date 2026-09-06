@@ -10,6 +10,7 @@ import FeedPage from './pages/FeedPage';
 import ClientsPage from './pages/admin/ClientsPage';
 import ClientDetailPage from './pages/admin/ClientDetailPage';
 import SubscriptionsPage from './pages/admin/SubscriptionsPage';
+import TeamPage from './pages/admin/TeamPage';
 import WorkoutsPage from './pages/WorkoutsPage';
 import MessagesPage from './pages/MessagesPage';
 import FollowUpsPage from './pages/FollowUpsPage';
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="/clients" element={<PrivateRoute roles={['admin', 'coach']}><ClientsPage /></PrivateRoute>} />
         <Route path="/clients/:id" element={<PrivateRoute roles={['admin', 'coach']}><ClientDetailPage /></PrivateRoute>} />
         <Route path="/subscriptions" element={<PrivateRoute roles={['admin', 'coach']}><SubscriptionsPage /></PrivateRoute>} />
+        <Route path="/team" element={<PrivateRoute roles={['admin', 'coach']}><TeamPage /></PrivateRoute>} />
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

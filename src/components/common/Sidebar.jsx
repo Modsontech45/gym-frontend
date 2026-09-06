@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import {
   LayoutDashboard, Users, Rss, Dumbbell, MessageCircle,
-  ClipboardCheck, User, CreditCard, Ruler, LogOut,
+  ClipboardCheck, User, CreditCard, Ruler, LogOut, ShieldCheck,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -18,6 +18,7 @@ const navItems = [
   navItem('/measurements', Ruler, 'measurements'),
   navItem('/clients', Users, 'clients', ['admin', 'coach']),
   navItem('/subscriptions', CreditCard, 'subscriptions', ['admin', 'coach']),
+  navItem('/team', ShieldCheck, 'team', ['admin', 'coach']),
   navItem('/profile', User, 'profile'),
 ];
 

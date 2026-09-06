@@ -39,6 +39,8 @@ export const usersApi = {
   getClient: (id) => api.get(`/users/clients/${id}`),
   createClient: (data) => api.post('/users/clients', data),
   updateClient: (id, data) => api.put(`/users/clients/${id}`, data),
+  getCoaches: () => api.get('/users/coaches'),
+  createCoach: (data) => api.post('/users/coaches', data),
 };
 
 // Subscriptions
