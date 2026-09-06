@@ -3,23 +3,29 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { postsApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { Heart, MessageCircle, Image, Video, Send, X, Dumbbell, TrendingUp, Trophy, Zap } from 'lucide-react';
+import {
+  Heart, MessageCircle, Image, Send, X,
+  Dumbbell, TrendingUp, Trophy, Zap, MessageSquare, Trash2,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const POST_TYPES = [
-  { value: 'general', label: 'Général', icon: '💬' },
-  { value: 'workout', label: 'Entraînement', icon: '💪' },
-  { value: 'progress', label: 'Progression', icon: '📈' },
-  { value: 'achievement', label: 'Réussite', icon: '🏆' },
-  { value: 'motivation', label: 'Motivation', icon: '⚡' },
+  { value: 'general',     label: 'Général',      Icon: MessageSquare },
+  { value: 'workout',     label: 'Entraînement', Icon: Dumbbell },
+  { value: 'progress',    label: 'Progression',  Icon: TrendingUp },
+  { value: 'achievement', label: 'Réussite',     Icon: Trophy },
+  { value: 'motivation',  label: 'Motivation',   Icon: Zap },
 ];
 
-function PostCard({ post, onLike, onComment }) {
+function PostCard({ post, onLike, onComment, onDelete }) {
   const { user } = useAuthStore();
   const [showComments, setShowComments] = useState(false);
   const [comment, setComment] = useState('');
+
+  const canDelete = user?.id === post.author?.id || user?.role === 'admin';
+  const typeInfo = POST_TYPES.find(t => t.value === post.postType);
 
   const { data: comments = [], refetch } = useQuery({
     queryKey: ['comments', post.id],
@@ -37,23 +43,36 @@ function PostCard({ post, onLike, onComment }) {
 
   return (
     <div className="card animate-fade-in">
+      {/* Header */}
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold text-sm">
+        <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold text-sm shrink-0">
           {post.author?.avatar ? (
             <img src={post.author.avatar} alt="" className="w-full h-full rounded-full object-cover" />
           ) : `${post.author?.firstName?.[0]}${post.author?.lastName?.[0]}`}
         </div>
-        <div className="flex-1">
-          <p className="font-semibold text-sm">{post.author?.firstName} {post.author?.lastName}</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm truncate">{post.author?.firstName} {post.author?.lastName}</p>
           <p className="text-xs text-dark-500">
             {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: fr })}
           </p>
         </div>
-        {post.postType !== 'general' && (
-          <span className="text-xs bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded-full">
-            {POST_TYPES.find(t => t.value === post.postType)?.icon} {POST_TYPES.find(t => t.value === post.postType)?.label}
-          </span>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {typeInfo && post.postType !== 'general' && (
+            <span className="hidden sm:flex items-center gap-1 text-xs bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded-full">
+              <typeInfo.Icon size={11} />
+              {typeInfo.label}
+            </span>
+          )}
+          {canDelete && (
+            <button
+              onClick={() => onDelete(post.id)}
+              className="p-1.5 rounded-lg text-dark-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              title="Supprimer"
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
+        </div>
       </div>
 
       {post.content && <p className="text-sm leading-relaxed mb-3">{post.content}</p>}
@@ -65,6 +84,7 @@ function PostCard({ post, onLike, onComment }) {
         <video src={post.mediaUrl} controls className="w-full rounded-xl mb-3 max-h-96" />
       )}
 
+      {/* Actions */}
       <div className="flex items-center gap-4 pt-3 border-t border-dark-700">
         <button onClick={() => onLike(post.id)}
           className={`flex items-center gap-1.5 text-sm transition-colors ${post.isLiked ? 'text-red-400' : 'text-dark-500 hover:text-red-400'}`}>
@@ -76,13 +96,20 @@ function PostCard({ post, onLike, onComment }) {
           <MessageCircle size={18} />
           <span>{post.commentsCount}</span>
         </button>
+        {/* Mobile post type badge */}
+        {typeInfo && post.postType !== 'general' && (
+          <span className="sm:hidden ml-auto flex items-center gap-1 text-xs text-primary-400">
+            <typeInfo.Icon size={11} />
+            {typeInfo.label}
+          </span>
+        )}
       </div>
 
       {showComments && (
         <div className="mt-3 space-y-3">
           {comments.map(c => (
             <div key={c.id} className="flex gap-2">
-              <div className="w-7 h-7 rounded-full bg-dark-700 flex items-center justify-center text-xs font-bold text-primary-400 flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-dark-700 flex items-center justify-center text-xs font-bold text-primary-400 shrink-0">
                 {c.author?.firstName?.[0]}
               </div>
               <div className="flex-1 bg-dark-700 rounded-xl px-3 py-2">
@@ -93,7 +120,7 @@ function PostCard({ post, onLike, onComment }) {
           ))}
           <form onSubmit={submitComment} className="flex gap-2">
             <input value={comment} onChange={e => setComment(e.target.value)}
-              className="input flex-1 py-2 text-sm" placeholder="Écrire un commentaire..." />
+              className="input flex-1 py-2 text-sm" placeholder="Écrire un commentaire…" />
             <button type="submit" className="btn-primary px-3 py-2"><Send size={16} /></button>
           </form>
         </div>
@@ -112,7 +139,7 @@ export default function FeedPage() {
   const [mediaPreview, setMediaPreview] = useState(null);
   const fileRef = useRef();
 
-  const { data, fetchNextPage, hasNextPage, isFetching } = useQuery({
+  const { data, isFetching } = useQuery({
     queryKey: ['feed'],
     queryFn: () => postsApi.getFeed({ page: 1, limit: 20 }).then(r => r.data),
   });
@@ -127,6 +154,15 @@ export default function FeedPage() {
       toast.success('Publication créée !');
     },
     onError: () => toast.error(t('error')),
+  });
+
+  const deletePost = useMutation({
+    mutationFn: (id) => postsApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['feed']);
+      toast.success('Publication supprimée');
+    },
+    onError: () => toast.error('Erreur lors de la suppression'),
   });
 
   const likePost = useMutation({
@@ -151,18 +187,16 @@ export default function FeedPage() {
 
   const handleFile = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setMedia(file);
-      setMediaPreview(URL.createObjectURL(file));
-    }
+    if (file) { setMedia(file); setMediaPreview(URL.createObjectURL(file)); }
   };
 
   return (
     <div className="max-w-2xl mx-auto space-y-4 pb-20 md:pb-0 animate-fade-in">
+      {/* Compose */}
       <div className="card">
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold text-sm flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold text-sm shrink-0">
               {user?.firstName?.[0]}{user?.lastName?.[0]}
             </div>
             <textarea value={content} onChange={e => setContent(e.target.value)}
@@ -170,10 +204,12 @@ export default function FeedPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {POST_TYPES.map(pt => (
-              <button key={pt.value} type="button" onClick={() => setPostType(pt.value)}
-                className={`text-xs px-3 py-1.5 rounded-full transition-all ${postType === pt.value ? 'bg-primary-500 text-white' : 'bg-dark-700 text-dark-500 hover:bg-dark-600'}`}>
-                {pt.icon} {pt.label}
+            {POST_TYPES.map(({ value, label, Icon }) => (
+              <button key={value} type="button" onClick={() => setPostType(value)}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full transition-all ${
+                  postType === value ? 'bg-primary-500 text-white' : 'bg-dark-700 text-dark-500 hover:bg-dark-600'
+                }`}>
+                <Icon size={12} /> {label}
               </button>
             ))}
           </div>
@@ -193,13 +229,11 @@ export default function FeedPage() {
           )}
 
           <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              <button type="button" onClick={() => fileRef.current.click()}
-                className="flex items-center gap-2 text-sm text-dark-500 hover:text-primary-400 transition-colors">
-                <Image size={18} /> Photo
-              </button>
-              <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleFile} className="hidden" />
-            </div>
+            <button type="button" onClick={() => fileRef.current.click()}
+              className="flex items-center gap-2 text-sm text-dark-500 hover:text-primary-400 transition-colors">
+              <Image size={18} /> Photo / Vidéo
+            </button>
+            <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleFile} className="hidden" />
             <button type="submit" disabled={createPost.isPending} className="btn-primary flex items-center gap-2">
               <Send size={16} /> Publier
             </button>
@@ -207,16 +241,18 @@ export default function FeedPage() {
         </form>
       </div>
 
+      {/* Feed */}
       {posts.map(post => (
         <PostCard key={post.id} post={post}
           onLike={(id) => likePost.mutate(id)}
+          onDelete={(id) => deletePost.mutate(id)}
           onComment={(postId, content) => addComment.mutate({ postId, content })} />
       ))}
 
       {isFetching && <div className="text-center text-dark-500 py-4">{t('loading')}</div>}
       {posts.length === 0 && !isFetching && (
         <div className="card text-center py-12">
-          <p className="text-4xl mb-3">🏋️</p>
+          <Dumbbell size={48} className="text-dark-700 mx-auto mb-3" />
           <p className="text-dark-500">Aucune publication. Soyez le premier !</p>
         </div>
       )}

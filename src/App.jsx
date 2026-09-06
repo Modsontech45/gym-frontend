@@ -4,6 +4,7 @@ import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import SurveyPage from './pages/SurveyPage';
 import DashboardPage from './pages/DashboardPage';
 import FeedPage from './pages/FeedPage';
 import ClientsPage from './pages/admin/ClientsPage';
@@ -35,6 +36,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={token ? <Navigate to="/dashboard" /> : <LoginPage />} />
       <Route path="/register" element={token ? <Navigate to="/dashboard" /> : <RegisterPage />} />
+      <Route path="/survey" element={<PrivateRoute><SurveyPage /></PrivateRoute>} />
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/feed" element={<FeedPage />} />

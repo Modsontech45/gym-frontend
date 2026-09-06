@@ -29,6 +29,7 @@ export const authApi = {
   me: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   changePassword: (data) => api.put('/auth/password', data),
+  saveSurvey: (data) => api.post('/auth/survey', data),
 };
 
 // Users

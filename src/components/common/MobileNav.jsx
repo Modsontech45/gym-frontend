@@ -1,11 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { LayoutDashboard, Rss, Dumbbell, MessageCircle, User } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function MobileNav() {
-  const { t } = useTranslation();
   const { user } = useAuthStore();
 
   const items = [
@@ -23,12 +21,11 @@ export default function MobileNav() {
           key={to}
           to={to}
           className={({ isActive }) =>
-            clsx('flex-1 flex flex-col items-center justify-center py-3 text-xs gap-1 transition-colors',
+            clsx('flex-1 flex items-center justify-center py-4 transition-colors',
               isActive ? 'text-primary-400' : 'text-dark-500')
           }
         >
-          <Icon size={20} />
-          <span>{t(label)}</span>
+          <Icon size={22} />
         </NavLink>
       ))}
     </nav>
