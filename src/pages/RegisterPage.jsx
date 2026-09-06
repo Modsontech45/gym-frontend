@@ -173,7 +173,7 @@ export default function RegisterPage() {
     // Step 2
     firstName: '', lastName: '', gender: 'homme', dateOfBirth: '', height: '', weight: '', location: '',
     // Step 3
-    primaryGoal: 'perte_poids', targetWeight: '', timeline: '3_mois',
+    primaryGoal: 'perte_poids', targetWeight: '', timeline: '3_mois', coachPreference: 'autonome',
     // Step 4
     activityLevel: 'peu_actif', workoutsPerWeek: '3', sessionDuration: '60', equipment: 'salle',
     injuries: '',
@@ -226,6 +226,7 @@ export default function RegisterPage() {
         fitnessGoal: d.primaryGoal,
         experienceLevel: plan?.experienceLevel || 'debutant',
         bodyType: plan?.bodyType,
+        coachPreference: d.coachPreference,
       });
       setAuth(res.data.user, res.data.token);
       toast.success('Compte créé avec succès ! 🎉');
@@ -343,6 +344,30 @@ export default function RegisterPage() {
           ))}
         </div>
       </div>
+      <div>
+        <Sec>Comment souhaitez-vous progresser ?</Sec>
+        <div className="grid grid-cols-2 gap-2">
+          <CardOpt value="coach" current={d.coachPreference} onClick={v => set('coachPreference', v)}>
+            <div className="flex items-start gap-2">
+              <span className="text-2xl shrink-0">🧑‍🏫</span>
+              <div>
+                <div className="text-sm font-semibold text-white">Avec un coach</div>
+                <div className="text-xs text-dark-400 mt-0.5">Suivi personnalisé et conseils d'un professionnel</div>
+              </div>
+            </div>
+          </CardOpt>
+          <CardOpt value="autonome" current={d.coachPreference} onClick={v => set('coachPreference', v)}>
+            <div className="flex items-start gap-2">
+              <span className="text-2xl shrink-0">🎧</span>
+              <div>
+                <div className="text-sm font-semibold text-white">En autonomie</div>
+                <div className="text-xs text-dark-400 mt-0.5">Je m'entraîne seul(e) à mon rythme</div>
+              </div>
+            </div>
+          </CardOpt>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label">Poids cible (kg, optionnel)</label>
@@ -531,6 +556,33 @@ export default function RegisterPage() {
             ))}
           </div>
         </div>
+
+        {/* Coach preference banner */}
+        {d.coachPreference === 'coach' ? (
+          <div className="rounded-2xl p-4" style={{ background: '#f9731610', border: '1px solid #f9731640' }}>
+            <div className="flex items-start gap-3">
+              <div className="text-2xl shrink-0">🧑‍🏫</div>
+              <div>
+                <div className="text-xs font-semibold text-primary-400 uppercase tracking-wider mb-1">Suivi par un coach</div>
+                <p className="text-xs text-dark-300 leading-relaxed">
+                  Votre demande de suivi personnalisé sera transmise à notre équipe. Un coach prendra contact avec vous après la création de votre compte.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl p-4" style={{ background: '#6d28d910', border: '1px solid #6d28d940' }}>
+            <div className="flex items-start gap-3">
+              <div className="text-2xl shrink-0">🎧</div>
+              <div>
+                <div className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-1">Mode autonome</div>
+                <p className="text-xs text-dark-300 leading-relaxed">
+                  Vous pouvez à tout moment demander un suivi coach depuis votre profil.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Nutrition */}
         <div className="rounded-2xl p-4" style={{ background: '#052e1622', border: '1px solid #10b98130' }}>
