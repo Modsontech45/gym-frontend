@@ -78,10 +78,10 @@ function PostCard({ post, onLike, onComment, onDelete }) {
       {post.content && <p className="text-sm leading-relaxed mb-3">{post.content}</p>}
 
       {post.mediaUrl && post.mediaType === 'image' && (
-        <img src={post.mediaUrl} alt="" className="w-full rounded-xl mb-3 max-h-96 object-cover" />
+        <img src={post.mediaUrl} alt="" className="w-full rounded-xl mb-3" />
       )}
       {post.mediaUrl && post.mediaType === 'video' && (
-        <video src={post.mediaUrl} controls className="w-full rounded-xl mb-3 max-h-96" />
+        <video src={post.mediaUrl} controls className="w-full rounded-xl mb-3" style={{ maxHeight: '70vh' }} />
       )}
 
       {/* Actions */}
@@ -137,6 +137,7 @@ export default function FeedPage() {
   const [postType, setPostType] = useState('general');
   const [media, setMedia] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
+  const [compressing, setCompressing] = useState(false);
   const fileRef = useRef();
 
   const { data, isFetching } = useQuery({
@@ -185,9 +186,42 @@ export default function FeedPage() {
     createPost.mutate(fd);
   };
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files[0];
-    if (file) { setMedia(file); setMediaPreview(URL.createObjectURL(file)); }
+    if (!file) return;
+    e.target.value = '';
+
+    if (file.type.startsWith('video/')) {
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error('Vidéo trop lourde (max 50 Mo)');
+        return;
+      }
+      setCompressing(true);
+      try {
+        await new Promise((resolve, reject) => {
+          const vid = document.createElement('video');
+          vid.preload = 'metadata';
+          vid.onloadedmetadata = () => {
+            window.URL.revokeObjectURL(vid.src);
+            if (vid.duration > 30) {
+              reject(new Error('La vidéo ne peut pas dépasser 30 secondes'));
+            } else {
+              resolve();
+            }
+          };
+          vid.onerror = () => reject(new Error('Impossible de lire cette vidéo'));
+          vid.src = URL.createObjectURL(file);
+        });
+      } catch (err) {
+        toast.error(err.message);
+        setCompressing(false);
+        return;
+      }
+      setCompressing(false);
+    }
+
+    setMedia(file);
+    setMediaPreview(URL.createObjectURL(file));
   };
 
   return (
@@ -229,15 +263,24 @@ export default function FeedPage() {
           )}
 
           <div className="flex items-center justify-between">
-            <button type="button" onClick={() => fileRef.current.click()}
-              className="flex items-center gap-2 text-sm text-dark-500 hover:text-primary-400 transition-colors">
+            <button type="button" onClick={() => !compressing && fileRef.current.click()}
+              className="flex items-center gap-2 text-sm text-dark-500 hover:text-primary-400 transition-colors disabled:opacity-50"
+              disabled={compressing}>
               <Image size={18} /> Photo / Vidéo
             </button>
             <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleFile} className="hidden" />
-            <button type="submit" disabled={createPost.isPending} className="btn-primary flex items-center gap-2">
-              <Send size={16} /> Publier
+            <button type="submit" disabled={createPost.isPending || compressing}
+              className="btn-primary flex items-center gap-2">
+              <Send size={16} />
+              {compressing ? 'Vérification…' : createPost.isPending && media?.type?.startsWith('video/') ? 'Compression…' : 'Publier'}
             </button>
           </div>
+          {compressing && (
+            <p className="text-xs text-dark-500 text-right">Vérification de la durée…</p>
+          )}
+          {createPost.isPending && media?.type?.startsWith('video/') && (
+            <p className="text-xs text-primary-400 text-right">Compression et envoi en cours…</p>
+          )}
         </form>
       </div>
 
