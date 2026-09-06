@@ -252,11 +252,18 @@ export default function SurveyPage() {
         coachPreference: d.coachPreference,
         bodyType: plan?.bodyType,
         experienceLevel: plan?.experienceLevel || 'debutant',
+        activityLevel: d.activityLevel,
+        workoutsPerWeek: parseInt(d.workoutsPerWeek),
+        sessionDuration: parseInt(d.sessionDuration),
+        equipment: d.equipment,
+        workoutTypes: d.workoutTypes,
+        preferredTime: d.preferredTime,
+        dietType: d.dietType,
+        injuries: d.injuries,
       });
       updateUser(res.data);
     } catch {
-      // non-blocking — still navigate
-      updateUser({ ...user, surveyCompleted: true });
+      updateUser({ ...user, surveyCompleted: true, aiPlan: null });
     } finally {
       setSubmitting(false);
       navigate('/dashboard');

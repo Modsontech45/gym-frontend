@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { authApi } from '../services/api';
-import { useAuthStore } from '../store/authStore';
 import { Dumbbell, Eye, EyeOff, ChevronRight, ChevronLeft, Check, Lock, User } from 'lucide-react';
 
 const STEPS = [
@@ -20,7 +19,6 @@ const GENDERS = [
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
@@ -67,9 +65,8 @@ export default function RegisterPage() {
         height: parseInt(data.height), weight: parseFloat(data.weight),
         location: data.location,
       });
-      setAuth(res.data.user, res.data.token);
-      toast.success('Compte créé ! Répondez à quelques questions pour personnaliser votre plan.');
-      navigate('/survey');
+      toast.success('Compte créé ! Vérifiez votre email pour le code de confirmation.');
+      navigate(`/verify-email?email=${encodeURIComponent(res.data.email)}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur lors de la création du compte');
     } finally {

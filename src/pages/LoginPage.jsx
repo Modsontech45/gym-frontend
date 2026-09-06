@@ -23,7 +23,13 @@ export default function LoginPage() {
       toast.success('Bienvenue !');
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.message || t('error'));
+      const errData = err.response?.data;
+      if (errData?.code === 'EMAIL_NOT_VERIFIED') {
+        toast.error('Vérifiez votre email avant de vous connecter');
+        navigate(`/verify-email?email=${encodeURIComponent(errData.email)}`);
+      } else {
+        toast.error(errData?.message || t('error'));
+      }
     } finally {
       setLoading(false);
     }
@@ -60,16 +66,15 @@ export default function LoginPage() {
               {loading ? t('loading') : t('login')}
             </button>
           </form>
+          <div className="text-right mt-2">
+            <Link to="/forgot-password" className="text-xs text-dark-500 hover:text-primary-400 transition-colors">
+              Mot de passe oublié ?
+            </Link>
+          </div>
           <p className="text-center text-dark-500 text-sm mt-4">
             Pas encore de compte ?{' '}
             <Link to="/register" className="text-primary-400 hover:text-primary-300">{t('register')}</Link>
           </p>
-          <div className="mt-4 p-3 bg-dark-700 rounded-xl text-xs text-dark-500">
-            <p className="font-medium mb-1">Comptes de démonstration :</p>
-            <p>Admin: admin@yunfit.fr / Admin2024!</p>
-            <p>Coach: coach@yunfit.fr / Coach2024!</p>
-            <p>Client: marie@example.fr / Client2024!</p>
-          </div>
         </div>
       </div>
     </div>

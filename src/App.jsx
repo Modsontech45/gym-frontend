@@ -4,6 +4,9 @@ import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import SurveyPage from './pages/SurveyPage';
 import DashboardPage from './pages/DashboardPage';
 import FeedPage from './pages/FeedPage';
@@ -38,6 +41,9 @@ export default function App() {
     <Routes>
       <Route path="/login" element={token ? <Navigate to="/dashboard" /> : <LoginPage />} />
       <Route path="/register" element={token ? <Navigate to="/dashboard" /> : <RegisterPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/survey" element={<PrivateRoute><SurveyPage /></PrivateRoute>} />
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route path="/dashboard" element={<DashboardPage />} />

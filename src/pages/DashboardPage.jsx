@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
-import { usersApi, workoutsApi, subsApi, followUpsApi } from '../services/api';
-import { Users, CreditCard, TrendingUp, UserPlus, Dumbbell, Calendar, CheckCircle } from 'lucide-react';
+import { usersApi, workoutsApi, subsApi, followUpsApi, authApi } from '../services/api';
+import { Users, CreditCard, TrendingUp, UserPlus, Dumbbell, Calendar, CheckCircle, Brain, Utensils, Zap, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const StatCard = ({ icon: Icon, label, value, sub, color = 'primary' }) => (
@@ -46,8 +46,37 @@ export default function DashboardPage() {
     queryFn: () => followUpsApi.getAll({ status: 'planifie' }).then(r => r.data),
   });
 
+  const { data: profile } = useQuery({
+    queryKey: ['my-profile'],
+    queryFn: () => authApi.me().then(r => r.data),
+    enabled: !isAdmin,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const activeSub = subs.find(s => s.status === 'actif');
   const activeProgram = programs.find(p => p.isActive);
+
+  const aiPlan = (() => {
+    try { return profile?.aiPlan ? JSON.parse(profile.aiPlan) : null; } catch { return null; }
+  })();
+
+  const todayWorkout = (() => {
+    if (!aiPlan) return null;
+    const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    const today = days[new Date().getDay()];
+    return aiPlan.weekly_schedule?.find(s => s.day === today) || null;
+  })();
+
+  const nextMeal = (() => {
+    if (!aiPlan?.nutrition?.meals?.length) return null;
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    const meals = aiPlan.nutrition.meals;
+    return meals.find(m => {
+      const [h, mm] = m.time.split(':').map(Number);
+      return h * 60 + mm > mins;
+    }) || meals[0];
+  })();
 
   return (
     <div className="space-y-6 pb-20 md:pb-0 animate-fade-in">
@@ -108,6 +137,83 @@ export default function DashboardPage() {
         </>
       ) : (
         <>
+          {profile !== undefined && (
+            aiPlan ? (
+              <div className="space-y-3">
+                {/* Profile summary */}
+                {aiPlan.profile_summary && (
+                  <div className="card flex items-start gap-3">
+                    <div className="w-10 h-10 bg-primary-500/15 rounded-xl flex items-center justify-center shrink-0">
+                      <Brain size={18} className="text-primary-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-primary-400 font-semibold uppercase tracking-wider mb-1">Votre plan IA</p>
+                      <p className="text-sm text-dark-300 leading-relaxed">{aiPlan.profile_summary}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Daily reminders row */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Next meal */}
+                  {nextMeal && (
+                    <div className="card">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Utensils size={14} className="text-emerald-400" />
+                        <span className="text-xs text-emerald-400 font-semibold uppercase tracking-wide">Prochain repas</span>
+                      </div>
+                      <p className="font-semibold text-sm">{nextMeal.name}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Clock size={11} className="text-dark-500" />
+                        <span className="text-xs text-dark-500">{nextMeal.time}</span>
+                        <span className="text-xs text-dark-600 ml-auto">{nextMeal.calories} kcal</span>
+                      </div>
+                      {nextMeal.items?.length > 0 && (
+                        <p className="text-xs text-dark-500 mt-1.5 line-clamp-2">{nextMeal.items.slice(0, 2).join(', ')}{nextMeal.items.length > 2 ? '…' : ''}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Today workout */}
+                  {todayWorkout && (
+                    <div className="card">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Zap size={14} className={todayWorkout.type === 'Repos' ? 'text-dark-500' : 'text-primary-400'} />
+                        <span className={`text-xs font-semibold uppercase tracking-wide ${todayWorkout.type === 'Repos' ? 'text-dark-500' : 'text-primary-400'}`}>
+                          Aujourd'hui
+                        </span>
+                      </div>
+                      <p className="font-semibold text-sm">{todayWorkout.name || todayWorkout.type}</p>
+                      {todayWorkout.duration && <p className="text-xs text-dark-500 mt-1">{todayWorkout.duration}</p>}
+                      {todayWorkout.focus && <p className="text-xs text-dark-600 mt-1 line-clamp-2">{todayWorkout.focus}</p>}
+                    </div>
+                  )}
+                </div>
+
+                {/* Weekly goal */}
+                {aiPlan.weekly_goal && (
+                  <div className="flex items-start gap-2 p-3 bg-primary-500/10 rounded-xl border border-primary-500/20">
+                    <span className="text-base">🎯</span>
+                    <div>
+                      <p className="text-xs text-primary-400 font-semibold">Objectif de la semaine</p>
+                      <p className="text-sm text-dark-300 mt-0.5">{aiPlan.weekly_goal}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="card flex items-center gap-4 py-5">
+                <div className="w-10 h-10 bg-primary-500/15 rounded-xl flex items-center justify-center shrink-0">
+                  <Brain size={18} className="text-primary-400 animate-pulse" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Génération de votre plan IA…</p>
+                  <p className="text-xs text-dark-500 mt-0.5">Notre IA analyse votre profil, revenez dans un instant.</p>
+                </div>
+              </div>
+            )
+          )}
+
           {activeSub ? (
             <div className="card bg-gradient-to-r from-primary-500/20 to-primary-600/10 border-primary-500/30">
               <div className="flex items-center justify-between">
