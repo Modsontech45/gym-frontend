@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { postsApi, messagesApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import Avatar from '../components/common/Avatar';
 import {
   Heart, MessageCircle, Image, Send, X,
   Dumbbell, TrendingUp, Trophy, Zap, MessageSquare,
@@ -224,11 +225,7 @@ function PostCard({ post, onLike, onComment, onDelete }) {
       <div className="card animate-fade-in">
         {/* Header */}
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold text-sm shrink-0 overflow-hidden">
-            {post.author?.avatar
-              ? <img src={post.author.avatar} alt="" className="w-full h-full object-cover" />
-              : `${post.author?.firstName?.[0]}${post.author?.lastName?.[0]}`}
-          </div>
+          <Avatar user={post.author} size="md" />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm truncate">{post.author?.firstName} {post.author?.lastName}</p>
             <p className="text-xs text-dark-500">
@@ -286,11 +283,7 @@ function PostCard({ post, onLike, onComment, onDelete }) {
           <div className="mt-3 space-y-2">
             {comments.map(c => (
               <div key={c.id} className="flex gap-2 group">
-                <div className="w-7 h-7 rounded-full bg-dark-700 flex items-center justify-center text-xs font-bold text-primary-400 shrink-0 overflow-hidden">
-                  {c.author?.avatar
-                    ? <img src={c.author.avatar} alt="" className="w-full h-full object-cover" />
-                    : c.author?.firstName?.[0]}
-                </div>
+                <Avatar user={c.author} size="sm" />
                 <div className="flex-1 min-w-0">
                   <div className={`rounded-xl px-3 py-2 ${isReplyComment(c.content) ? 'bg-primary-500/10 border border-primary-500/20' : 'bg-dark-700'}`}>
                     <p className="text-xs font-medium text-primary-400">{c.author?.firstName} {c.author?.lastName}</p>

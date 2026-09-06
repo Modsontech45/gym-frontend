@@ -35,6 +35,7 @@ export const authApi = {
 // Users
 export const usersApi = {
   getStats: () => api.get('/users/stats'),
+  getPublicProfile: (id) => api.get(`/users/profile/${id}`),
   getClients: () => api.get('/users/clients'),
   getClient: (id) => api.get(`/users/clients/${id}`),
   createClient: (data) => api.post('/users/clients', data),

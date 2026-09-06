@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { messagesApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { Send, ArrowLeft } from 'lucide-react';
+import Avatar from '../components/common/Avatar';
+import { Send, ArrowLeft, MessageCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -60,15 +61,16 @@ export default function MessagesPage() {
         {conversations.map(conv => (
           <button key={conv.user?.id} onClick={() => navigate(`/messages/${conv.user?.id}`)}
             className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors mb-1 ${otherId === conv.user?.id ? 'bg-primary-500/20' : 'hover:bg-dark-700'}`}>
-            <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold text-sm flex-shrink-0">
-              {conv.user?.firstName?.[0]}{conv.user?.lastName?.[0]}
+            {/* Avatar: clicking navigates to profile, not to DM */}
+            <div onClick={e => e.stopPropagation()}>
+              <Avatar user={conv.user} size="md" />
             </div>
             <div className="flex-1 text-left min-w-0">
               <p className="text-sm font-medium truncate">{conv.user?.firstName} {conv.user?.lastName}</p>
               <p className="text-xs text-dark-500 truncate">{conv.lastMessage?.content}</p>
             </div>
             {conv.unreadCount > 0 && (
-              <span className="bg-primary-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+              <span className="bg-primary-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">
                 {conv.unreadCount}
               </span>
             )}
@@ -79,26 +81,28 @@ export default function MessagesPage() {
       {/* Chat area */}
       {otherId ? (
         <div className="flex-1 flex flex-col card overflow-hidden p-0">
+          {/* Chat header */}
           <div className="flex items-center gap-3 p-4 border-b border-dark-700">
             <button onClick={() => navigate('/messages')} className="md:hidden p-1 rounded-lg hover:bg-dark-700">
               <ArrowLeft size={20} />
             </button>
-            <div className="w-9 h-9 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold text-sm">
-              {selectedConv?.user?.firstName?.[0]}{selectedConv?.user?.lastName?.[0]}
-            </div>
-            <div>
-              <p className="font-semibold">{selectedConv?.user?.firstName} {selectedConv?.user?.lastName}</p>
+            <Avatar user={selectedConv?.user} size="md" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold truncate">{selectedConv?.user?.firstName} {selectedConv?.user?.lastName}</p>
               <p className="text-xs text-dark-500 capitalize">{selectedConv?.user?.role}</p>
             </div>
           </div>
 
+          {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.map(msg => {
               const isMe = msg.senderId === user?.id;
+              const sender = isMe ? user : selectedConv?.user;
               return (
-                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                <div key={msg.id} className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                  {!isMe && <Avatar user={sender} size="xs" />}
                   <div className={`max-w-xs px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-primary-500 text-white rounded-br-sm' : 'bg-dark-700 rounded-bl-sm'}`}>
-                    <p>{msg.content}</p>
+                    <p className="whitespace-pre-line">{msg.content}</p>
                     <p className={`text-xs mt-1 ${isMe ? 'text-primary-200' : 'text-dark-500'}`}>
                       {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: fr })}
                     </p>
@@ -111,7 +115,7 @@ export default function MessagesPage() {
 
           <form onSubmit={handleSend} className="p-4 border-t border-dark-700 flex gap-3">
             <input value={text} onChange={e => setText(e.target.value)}
-              className="input flex-1 py-2.5" placeholder="Écrire un message..." />
+              className="input flex-1 py-2.5" placeholder="Écrire un message…" />
             <button type="submit" disabled={sendMessage.isPending} className="btn-primary px-4">
               <Send size={18} />
             </button>
@@ -119,9 +123,9 @@ export default function MessagesPage() {
         </div>
       ) : (
         <div className="hidden md:flex flex-1 card items-center justify-center">
-          <div className="text-center">
-            <p className="text-4xl mb-3">💬</p>
-            <p className="text-dark-500">Sélectionnez une conversation</p>
+          <div className="text-center text-dark-500">
+            <MessageCircle size={48} className="mx-auto mb-3 text-dark-700" />
+            <p>Sélectionnez une conversation</p>
           </div>
         </div>
       )}

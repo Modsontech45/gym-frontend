@@ -15,6 +15,7 @@ import WorkoutsPage from './pages/WorkoutsPage';
 import MessagesPage from './pages/MessagesPage';
 import FollowUpsPage from './pages/FollowUpsPage';
 import ProfilePage from './pages/ProfilePage';
+import UserProfilePage from './pages/UserProfilePage';
 import MeasurementsPage from './pages/MeasurementsPage';
 import Layout from './components/common/Layout';
 
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/messages/:userId" element={<MessagesPage />} />
         <Route path="/followups" element={<FollowUpsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/user/:userId" element={<UserProfilePage />} />
         <Route path="/measurements" element={<MeasurementsPage />} />
         <Route path="/clients" element={<PrivateRoute roles={['admin', 'coach']}><ClientsPage /></PrivateRoute>} />
         <Route path="/clients/:id" element={<PrivateRoute roles={['admin', 'coach']}><ClientDetailPage /></PrivateRoute>} />

@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
+import Avatar from './Avatar';
 import {
   LayoutDashboard, Users, Rss, Dumbbell, MessageCircle,
   ClipboardCheck, User, CreditCard, Ruler, LogOut, ShieldCheck,
@@ -54,9 +55,7 @@ export default function Sidebar() {
 
       <div className="px-3 mt-4 border-t border-dark-700 pt-4">
         <div className="flex items-center gap-3 px-3 py-2 mb-2">
-          <div className="w-9 h-9 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold text-sm">
-            {user?.firstName?.[0]}{user?.lastName?.[0]}
-          </div>
+          <Avatar user={user} size="sm" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
             <p className="text-xs text-dark-500 capitalize">{user?.role}</p>

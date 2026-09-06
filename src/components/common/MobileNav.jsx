@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/authStore';
 import { subsApi, messagesApi, notificationsApi } from '../../services/api';
+import Avatar from './Avatar';
 import {
   LayoutDashboard, Rss, Dumbbell, MessageCircle, User,
   Menu, LogOut, CreditCard, Clock, Settings, X, ChevronRight, Bell,
@@ -130,9 +131,7 @@ export default function MobileNav() {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-dark-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold text-sm">
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
-            </div>
+            <Avatar user={user} size="md" clickable={true} />
             <div>
               <p className="font-semibold text-sm text-white">{user?.firstName} {user?.lastName}</p>
               <p className="text-xs text-dark-500 capitalize">{user?.role}</p>
