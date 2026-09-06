@@ -5,9 +5,9 @@ import { postsApi, messagesApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import Avatar from '../components/common/Avatar';
 import {
-  Heart, MessageCircle, Image, Send, X,
+  Heart, MessageCircle, X,
   Dumbbell, TrendingUp, Trophy, Zap, MessageSquare,
-  MoreHorizontal, Trash2, Share2, Link, Reply, Loader2,
+  MoreHorizontal, Trash2, Share2, Link, Reply, Send,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -377,31 +377,13 @@ function PostCard({ post, onLike, onComment, onDelete, onDeleteComment }) {
 
 export default function FeedPage() {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
   const queryClient = useQueryClient();
-  const [content, setContent] = useState('');
-  const [postType, setPostType] = useState('general');
-  const [media, setMedia] = useState(null);
-  const [mediaPreview, setMediaPreview] = useState(null);
-  const [compressing, setCompressing] = useState(false);
-  const fileRef = useRef();
-
   const { data, isFetching } = useQuery({
     queryKey: ['feed'],
     queryFn: () => postsApi.getFeed({ page: 1, limit: 20 }).then(r => r.data),
   });
 
   const posts = data?.posts || [];
-
-  const createPost = useMutation({
-    mutationFn: (formData) => postsApi.create(formData),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['feed']);
-      setContent(''); setMedia(null); setMediaPreview(null); setPostType('general');
-      toast.success('Publication créée !');
-    },
-    onError: () => toast.error(t('error')),
-  });
 
   const deletePost = useMutation({
     mutationFn: (id) => postsApi.delete(id),
@@ -428,102 +410,8 @@ export default function FeedPage() {
     onError: () => toast.error('Erreur lors de la suppression'),
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!content.trim() && !media) return toast.error('Ajoutez du contenu ou une image');
-    const fd = new FormData();
-    fd.append('content', content);
-    fd.append('postType', postType);
-    if (media) fd.append('media', media);
-    createPost.mutate(fd);
-  };
-
-  const handleFile = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    e.target.value = '';
-
-    if (file.type.startsWith('video/')) {
-      if (file.size > 50 * 1024 * 1024) { toast.error('Vidéo trop lourde (max 50 Mo)'); return; }
-      setCompressing(true);
-      try {
-        await new Promise((resolve, reject) => {
-          const vid = document.createElement('video');
-          vid.preload = 'metadata';
-          vid.onloadedmetadata = () => {
-            window.URL.revokeObjectURL(vid.src);
-            vid.duration > 30 ? reject(new Error('La vidéo ne peut pas dépasser 30 secondes')) : resolve();
-          };
-          vid.onerror = () => reject(new Error('Impossible de lire cette vidéo'));
-          vid.src = URL.createObjectURL(file);
-        });
-      } catch (err) { toast.error(err.message); setCompressing(false); return; }
-      setCompressing(false);
-    }
-
-    setMedia(file);
-    setMediaPreview(URL.createObjectURL(file));
-  };
-
   return (
     <div className="max-w-2xl mx-auto space-y-4 pb-20 md:pb-0 animate-fade-in">
-      {/* Compose */}
-      <div className="card">
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold text-sm shrink-0">
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
-            </div>
-            <textarea value={content} onChange={e => setContent(e.target.value)}
-              className="input flex-1 resize-none min-h-[80px]" placeholder={t('write_post')} />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {POST_TYPES.map(({ value, label, Icon }) => (
-              <button key={value} type="button" onClick={() => setPostType(value)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full transition-all ${
-                  postType === value ? 'bg-primary-500 text-white' : 'bg-dark-700 text-dark-500 hover:bg-dark-600'
-                }`}>
-                <Icon size={12} /> {label}
-              </button>
-            ))}
-          </div>
-
-          {mediaPreview && (
-            <div className="relative">
-              {media?.type?.startsWith('video') ? (
-                <video src={mediaPreview} className="w-full rounded-xl max-h-48 object-cover" />
-              ) : (
-                <img src={mediaPreview} alt="" className="w-full rounded-xl max-h-48 object-cover" />
-              )}
-              <button type="button" onClick={() => { setMedia(null); setMediaPreview(null); }}
-                className="absolute top-2 right-2 bg-dark-900/80 p-1 rounded-full">
-                <X size={14} />
-              </button>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between">
-            <button type="button" onClick={() => !compressing && fileRef.current.click()}
-              className="flex items-center gap-2 text-sm text-dark-500 hover:text-primary-400 transition-colors disabled:opacity-50"
-              disabled={compressing}>
-              <Image size={18} /> Photo / Vidéo
-            </button>
-            <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleFile} className="hidden" />
-            <button type="submit" disabled={createPost.isPending || compressing}
-              className="btn-primary flex items-center gap-2 min-w-[110px] justify-center">
-              {createPost.isPending ? (
-                <><Loader2 size={16} className="animate-spin" /> Publication…</>
-              ) : compressing ? (
-                <><Loader2 size={16} className="animate-spin" /> Vérification…</>
-              ) : (
-                <><Send size={16} /> Publier</>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-
       {/* Feed */}
       {posts.map(post => (
         <PostCard key={post.id} post={post}

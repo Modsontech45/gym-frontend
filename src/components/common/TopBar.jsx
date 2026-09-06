@@ -44,6 +44,13 @@ export default function TopBar() {
       <div className="flex items-center gap-3">
         <button
           onClick={openCompose}
+          className="md:hidden p-2 rounded-xl bg-dark-700 hover:bg-dark-600 transition-colors text-primary-400"
+          title="Nouvelle publication"
+        >
+          <PlusCircle size={20} />
+        </button>
+        <button
+          onClick={openCompose}
           className="hidden md:flex items-center gap-2 btn-primary py-2 px-4 text-sm"
           title="Nouvelle publication"
         >
