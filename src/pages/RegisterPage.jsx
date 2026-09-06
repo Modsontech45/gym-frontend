@@ -1,9 +1,22 @@
+<title>Register</title>
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { authApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { Dumbbell, Eye, EyeOff, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { Dumbbell, Eye, EyeOff, ChevronRight, ChevronLeft, Check, Lock, User } from 'lucide-react';
+
+const STEPS = [
+  { label: 'Mon Compte', Icon: Lock },
+  { label: 'Mon Profil', Icon: User },
+];
+
+const GENDERS = [
+  { value: 'homme',  label: 'Homme' },
+  { value: 'femme',  label: 'Femme' },
+  { value: 'autre',  label: 'Autre' },
+];
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -13,46 +26,46 @@ export default function RegisterPage() {
   const [showPwd, setShowPwd] = useState(false);
   const [showCfm, setShowCfm] = useState(false);
 
-  const [d, setD] = useState({
-    email: '', password: '', confirmPassword: '', phone: '',
-    firstName: '', lastName: '', gender: 'homme',
-    dateOfBirth: '', height: '', weight: '', location: '',
+  const { register, watch, setValue, getValues } = useForm({
+    defaultValues: {
+      email: '', password: '', confirmPassword: '', phone: '',
+      firstName: '', lastName: '', gender: 'homme',
+      dateOfBirth: '', height: '', weight: '', location: '',
+    },
   });
 
-  const set = (k, v) => setD(p => ({ ...p, [k]: v }));
+  const gender = watch('gender');
 
-  const validateStep1 = () => {
-    if (!d.email || !d.password || !d.confirmPassword)
-      return toast.error('Remplissez tous les champs obligatoires'), false;
-    if (!/\S+@\S+\.\S+/.test(d.email))
-      return toast.error('Email invalide'), false;
-    if (d.password.length < 6)
-      return toast.error('Mot de passe : 6 caractères minimum'), false;
-    if (d.password !== d.confirmPassword)
-      return toast.error('Les mots de passe ne correspondent pas'), false;
-    return true;
-  };
-
-  const validateStep2 = () => {
-    if (!d.firstName || !d.lastName || !d.dateOfBirth || !d.height || !d.weight)
-      return toast.error('Remplissez tous les champs obligatoires'), false;
-    if (d.height < 100 || d.height > 250)
-      return toast.error('Taille invalide (100–250 cm)'), false;
-    if (d.weight < 30 || d.weight > 300)
-      return toast.error('Poids invalide (30–300 kg)'), false;
-    return true;
+  const goStep2 = () => {
+    const { email, password, confirmPassword } = getValues();
+    if (!email || !password || !confirmPassword)
+      return toast.error('Remplissez tous les champs obligatoires');
+    if (!/\S+@\S+\.\S+/.test(email))
+      return toast.error('Email invalide');
+    if (password.length < 6)
+      return toast.error('Mot de passe : 6 caractères minimum');
+    if (password !== confirmPassword)
+      return toast.error('Les mots de passe ne correspondent pas');
+    setStep(2);
   };
 
   const submit = async () => {
-    if (!validateStep2()) return;
+    const data = getValues();
+    if (!data.firstName || !data.lastName || !data.dateOfBirth || !data.height || !data.weight)
+      return toast.error('Remplissez tous les champs obligatoires');
+    if (data.height < 100 || data.height > 250)
+      return toast.error('Taille invalide (100–250 cm)');
+    if (data.weight < 30 || data.weight > 300)
+      return toast.error('Poids invalide (30–300 kg)');
+
     setLoading(true);
     try {
       const res = await authApi.register({
-        firstName: d.firstName, lastName: d.lastName,
-        email: d.email, password: d.password, phone: d.phone,
-        gender: d.gender, dateOfBirth: d.dateOfBirth,
-        height: parseInt(d.height), weight: parseFloat(d.weight),
-        location: d.location,
+        firstName: data.firstName, lastName: data.lastName,
+        email: data.email, password: data.password, phone: data.phone,
+        gender: data.gender, dateOfBirth: data.dateOfBirth,
+        height: parseInt(data.height), weight: parseFloat(data.weight),
+        location: data.location,
       });
       setAuth(res.data.user, res.data.token);
       toast.success('Compte créé ! Répondez à quelques questions pour personnaliser votre plan.');
@@ -63,8 +76,6 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
-
-  const STEPS = [{ label: 'Mon Compte', icon: '🔐' }, { label: 'Mon Profil', icon: '👤' }];
 
   return (
     <div className="min-h-screen bg-dark-900 flex flex-col items-center justify-center p-4">
@@ -83,14 +94,15 @@ export default function RegisterPage() {
         <div className="flex items-center gap-1 mb-5">
           {STEPS.map((s, i) => {
             const n = i + 1;
+            const StepIcon = s.Icon;
             return (
               <div key={n} className="flex items-center flex-1">
-                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 ${
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full shrink-0 ${
                   n < step  ? 'bg-primary-500 text-white'
                   : n === step ? 'bg-primary-500/20 text-primary-400 ring-2 ring-primary-500'
                   : 'bg-dark-800 text-dark-600'
                 }`}>
-                  {n < step ? <Check size={11} /> : n}
+                  {n < step ? <Check size={11} /> : <StepIcon size={11} />}
                 </div>
                 {i < STEPS.length - 1 && (
                   <div className={`h-0.5 flex-1 mx-1 ${n < step ? 'bg-primary-500' : 'bg-dark-700'}`} />
@@ -101,24 +113,29 @@ export default function RegisterPage() {
         </div>
 
         <div className="card">
-          <div className="flex items-center gap-2 mb-5">
-            <span className="text-xl">{STEPS[step - 1].icon}</span>
-            <h2 className="text-base font-bold text-white">{STEPS[step - 1].label}</h2>
-            <span className="ml-auto text-xs text-dark-600">{step}/2</span>
-          </div>
+          {(() => {
+            const StepIcon = STEPS[step - 1].Icon;
+            return (
+              <div className="flex items-center gap-2 mb-5">
+                <StepIcon size={16} className="text-primary-400" />
+                <h2 className="text-base font-bold text-white">{STEPS[step - 1].label}</h2>
+                <span className="ml-auto text-xs text-dark-600">{step}/2</span>
+              </div>
+            );
+          })()}
 
           {/* ── Step 1: Account ──────────────────────────────────────── */}
           {step === 1 && (
             <div className="space-y-4">
               <div>
                 <label className="label">Email *</label>
-                <input value={d.email} onChange={e => set('email', e.target.value)}
+                <input {...register('email')}
                   type="email" className="input" placeholder="vous@exemple.com" />
               </div>
               <div>
                 <label className="label">Mot de passe *</label>
                 <div className="relative">
-                  <input value={d.password} onChange={e => set('password', e.target.value)}
+                  <input {...register('password')}
                     type={showPwd ? 'text' : 'password'} className="input pr-10" placeholder="6 caractères minimum" />
                   <button type="button" onClick={() => setShowPwd(v => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-500 hover:text-white transition-colors">
@@ -129,7 +146,7 @@ export default function RegisterPage() {
               <div>
                 <label className="label">Confirmer le mot de passe *</label>
                 <div className="relative">
-                  <input value={d.confirmPassword} onChange={e => set('confirmPassword', e.target.value)}
+                  <input {...register('confirmPassword')}
                     type={showCfm ? 'text' : 'password'} className="input pr-10" />
                   <button type="button" onClick={() => setShowCfm(v => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-500 hover:text-white transition-colors">
@@ -139,10 +156,10 @@ export default function RegisterPage() {
               </div>
               <div>
                 <label className="label">Téléphone (optionnel)</label>
-                <input value={d.phone} onChange={e => set('phone', e.target.value)}
+                <input {...register('phone')}
                   type="tel" className="input" placeholder="+225 07 00 00 00 00" />
               </div>
-              <button type="button" onClick={() => validateStep1() && setStep(2)}
+              <button type="button" onClick={goStep2}
                 className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-2">
                 Continuer <ChevronRight size={16} />
               </button>
@@ -155,26 +172,25 @@ export default function RegisterPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">Prénom *</label>
-                  <input value={d.firstName} onChange={e => set('firstName', e.target.value)}
-                    className="input" placeholder="Marie" />
+                  <input {...register('firstName')} className="input" placeholder="Marie" />
                 </div>
                 <div>
                   <label className="label">Nom *</label>
-                  <input value={d.lastName} onChange={e => set('lastName', e.target.value)}
-                    className="input" placeholder="Koné" />
+                  <input {...register('lastName')} className="input" placeholder="Koné" />
                 </div>
               </div>
 
               <div>
                 <label className="label">Genre</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[['homme','♂️','Homme'],['femme','♀️','Femme'],['autre','⚧️','Autre']].map(([v,e,l]) => (
-                    <button key={v} type="button" onClick={() => set('gender', v)}
-                      className={`p-3 rounded-xl border-2 text-center transition-all ${
-                        d.gender === v ? 'border-primary-500 bg-primary-500/10' : 'border-dark-700 bg-dark-800 hover:border-dark-500'
+                  {GENDERS.map(({ value, label }) => (
+                    <button key={value} type="button" onClick={() => setValue('gender', value)}
+                      className={`py-3 rounded-xl border-2 text-center text-sm font-medium transition-all ${
+                        gender === value
+                          ? 'border-primary-500 bg-primary-500/10 text-primary-400'
+                          : 'border-dark-700 bg-dark-800 hover:border-dark-500 text-dark-400'
                       }`}>
-                      <div className="text-xl">{e}</div>
-                      <div className="text-xs text-dark-400 mt-0.5">{l}</div>
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -182,26 +198,26 @@ export default function RegisterPage() {
 
               <div>
                 <label className="label">Date de naissance *</label>
-                <input value={d.dateOfBirth} onChange={e => set('dateOfBirth', e.target.value)}
+                <input {...register('dateOfBirth')}
                   type="date" className="input" max={new Date().toISOString().split('T')[0]} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">Taille * (cm)</label>
-                  <input value={d.height} onChange={e => set('height', e.target.value)}
+                  <input {...register('height')}
                     type="number" className="input" placeholder="175" min="100" max="250" />
                 </div>
                 <div>
                   <label className="label">Poids * (kg)</label>
-                  <input value={d.weight} onChange={e => set('weight', e.target.value)}
+                  <input {...register('weight')}
                     type="number" className="input" placeholder="70" min="30" max="300" step="0.1" />
                 </div>
               </div>
 
               <div>
                 <label className="label">Ville / Localisation</label>
-                <input value={d.location} onChange={e => set('location', e.target.value)}
+                <input {...register('location')}
                   className="input" placeholder="Abidjan, Côte d'Ivoire" />
               </div>
 

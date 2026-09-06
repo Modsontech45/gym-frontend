@@ -3,17 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../services/api';
 import toast from 'react-hot-toast';
-import { Check, ChevronLeft, ChevronRight, Dumbbell } from 'lucide-react';
+import {
+  Check, ChevronLeft, ChevronRight, Dumbbell,
+  Target, Zap, Heart, Trophy,
+  Flame, Star, Activity, Scale,
+  GraduationCap, Headphones,
+  Home, Package, Building2,
+  Sunrise, Sun, Moon,
+  Utensils, Leaf, Wheat,
+  Waves, Bike, Lightbulb,
+} from 'lucide-react';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants (module-level for stability) ───────────────────────────────────
 
 const GOALS = [
-  { value: 'perte_poids', emoji: '🔥', label: 'Perte de poids',  desc: 'Brûler les graisses' },
-  { value: 'prise_masse', emoji: '💪', label: 'Prise de masse',  desc: 'Développer le muscle' },
-  { value: 'tonifier',    emoji: '✨', label: 'Tonification',    desc: 'Sculpter la silhouette' },
-  { value: 'force',       emoji: '🏋️', label: 'Force',           desc: 'Devenir plus fort(e)' },
-  { value: 'endurance',   emoji: '🏃', label: 'Endurance',       desc: 'Améliorer le cardio' },
-  { value: 'maintien',    emoji: '⚖️', label: 'Maintien',        desc: 'Rester en forme' },
+  { value: 'perte_poids', Icon: Flame,    label: 'Perte de poids',  desc: 'Brûler les graisses' },
+  { value: 'prise_masse', Icon: Dumbbell, label: 'Prise de masse',  desc: 'Développer le muscle' },
+  { value: 'tonifier',    Icon: Star,     label: 'Tonification',    desc: 'Sculpter la silhouette' },
+  { value: 'force',       Icon: Zap,      label: 'Force',           desc: 'Devenir plus fort(e)' },
+  { value: 'endurance',   Icon: Activity, label: 'Endurance',       desc: 'Améliorer le cardio' },
+  { value: 'maintien',    Icon: Scale,    label: 'Maintien',        desc: 'Rester en forme' },
 ];
 
 const ACTIVITY = [
@@ -24,22 +33,58 @@ const ACTIVITY = [
 ];
 
 const WORKOUT_TYPES = [
-  { value: 'musculation',  emoji: '🏋️', label: 'Musculation' },
-  { value: 'cardio',       emoji: '🏃', label: 'Cardio' },
-  { value: 'hiit',         emoji: '⚡', label: 'HIIT' },
-  { value: 'yoga',         emoji: '🧘', label: 'Yoga' },
-  { value: 'natation',     emoji: '🏊', label: 'Natation' },
-  { value: 'running',      emoji: '👟', label: 'Course' },
-  { value: 'velo',         emoji: '🚴', label: 'Vélo' },
-  { value: 'calisthenics', emoji: '🤸', label: 'Calisthenics' },
+  { value: 'musculation',  Icon: Dumbbell,  label: 'Musculation' },
+  { value: 'cardio',       Icon: Heart,     label: 'Cardio' },
+  { value: 'hiit',         Icon: Zap,       label: 'HIIT' },
+  { value: 'yoga',         Icon: Leaf,      label: 'Yoga' },
+  { value: 'natation',     Icon: Waves,     label: 'Natation' },
+  { value: 'running',      Icon: Activity,  label: 'Course' },
+  { value: 'velo',         Icon: Bike,      label: 'Vélo' },
+  { value: 'calisthenics', Icon: Star,      label: 'Calisthenics' },
+];
+
+const EQUIPMENT = [
+  { value: 'aucun',   Icon: Home,      label: 'Aucun' },
+  { value: 'basique', Icon: Package,   label: 'Basique' },
+  { value: 'salle',   Icon: Building2, label: 'Salle complète' },
+];
+
+const TIMES = [
+  { value: 'matin',      Icon: Sunrise, label: 'Matin',      hours: '6h–12h' },
+  { value: 'apres_midi', Icon: Sun,     label: 'Après-midi', hours: '12h–17h' },
+  { value: 'soir',       Icon: Moon,    label: 'Soir',       hours: '17h–22h' },
+];
+
+const DIETS = [
+  { value: 'omnivore',    Icon: Utensils, label: 'Omnivore' },
+  { value: 'vegetarien',  Icon: Leaf,     label: 'Végétarien' },
+  { value: 'vegan',       Icon: Leaf,     label: 'Végétalien' },
+  { value: 'keto',        Icon: Flame,    label: 'Kéto' },
+  { value: 'sans_gluten', Icon: Wheat,    label: 'Sans gluten' },
+  { value: 'autre',       Icon: Utensils, label: 'Autre' },
 ];
 
 const STEPS = [
-  { icon: '🎯', label: 'Mes Objectifs' },
-  { icon: '⚡', label: 'Mode de vie' },
-  { icon: '❤️', label: 'Préférences' },
-  { icon: '🏆', label: 'Mon Plan' },
+  { Icon: Target,  label: 'Mes Objectifs' },
+  { Icon: Zap,     label: 'Mode de vie' },
+  { Icon: Heart,   label: 'Préférences' },
+  { Icon: Trophy,  label: 'Mon Plan' },
 ];
+
+// ─── Module-level Opt (avoids remounting on parent re-render) ─────────────────
+
+function Opt({ value, current, onClick, children, wide }) {
+  return (
+    <button type="button" onClick={() => onClick(value)}
+      className={`p-3 rounded-xl border-2 text-left transition-all ${wide ? 'w-full' : ''} ${
+        current === value
+          ? 'border-primary-500 bg-primary-500/10'
+          : 'border-dark-700 bg-dark-800 hover:border-dark-500'
+      }`}>
+      {children}
+    </button>
+  );
+}
 
 // ─── Plan computation ─────────────────────────────────────────────────────────
 
@@ -179,28 +224,17 @@ export default function SurveyPage() {
         bodyType: plan?.bodyType,
         experienceLevel: plan?.experienceLevel || 'debutant',
       });
-      toast.success('Profil fitness complété ! Bienvenue 🎉');
+      toast.success('Profil fitness complété ! Bienvenue');
     } catch {
-      // non-blocking — go to dashboard regardless
+      // non-blocking
     } finally {
       setSubmitting(false);
       navigate('/dashboard');
     }
   };
 
-  // Helper: card option button
-  const Opt = ({ value, current, onClick, children, wide }) => (
-    <button type="button" onClick={() => onClick(value)}
-      className={`p-3 rounded-xl border-2 text-left transition-all ${wide ? 'w-full' : ''} ${
-        current === value
-          ? 'border-primary-500 bg-primary-500/10'
-          : 'border-dark-700 bg-dark-800 hover:border-dark-500'
-      }`}>
-      {children}
-    </button>
-  );
-
   const bmiPct = plan ? Math.min(100, Math.max(0, ((parseFloat(plan.bmi) - 10) / 40) * 100)) : 0;
+  const StepIcon = STEPS[step - 1].Icon;
 
   return (
     <div className="min-h-screen bg-dark-900 flex flex-col items-center justify-start p-4 pt-8 pb-12">
@@ -217,18 +251,19 @@ export default function SurveyPage() {
           </p>
         </div>
 
-        {/* Progress bar */}
+        {/* Step progress */}
         <div className="flex items-center gap-0.5 mb-5">
           {STEPS.map((s, i) => {
             const n = i + 1;
+            const SIcon = s.Icon;
             return (
               <div key={n} className="flex items-center flex-1">
-                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 ${
-                  n < step  ? 'bg-primary-500 text-white'
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full shrink-0 ${
+                  n < step    ? 'bg-primary-500 text-white'
                   : n === step ? 'bg-primary-500/20 text-primary-400 ring-2 ring-primary-500'
                   : 'bg-dark-800 text-dark-600'
                 }`}>
-                  {n < step ? <Check size={11} /> : n}
+                  {n < step ? <Check size={11} /> : <SIcon size={11} />}
                 </div>
                 {i < STEPS.length - 1 && (
                   <div className={`h-0.5 flex-1 mx-0.5 ${n < step ? 'bg-primary-500' : 'bg-dark-700'}`} />
@@ -240,7 +275,7 @@ export default function SurveyPage() {
 
         <div className="card">
           <div className="flex items-center gap-2 mb-5">
-            <span className="text-xl">{STEPS[step - 1].icon}</span>
+            <StepIcon size={16} className="text-primary-400" />
             <h2 className="text-base font-bold text-white">{STEPS[step - 1].label}</h2>
             <span className="ml-auto text-xs text-dark-600">{step}/{STEPS.length}</span>
           </div>
@@ -251,17 +286,20 @@ export default function SurveyPage() {
               <div>
                 <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">Objectif principal</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {GOALS.map(g => (
-                    <Opt key={g.value} value={g.value} current={d.primaryGoal} onClick={v => set('primaryGoal', v)}>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{g.emoji}</span>
-                        <div>
-                          <div className="text-sm font-semibold text-white">{g.label}</div>
-                          <div className="text-xs text-dark-400">{g.desc}</div>
+                  {GOALS.map(g => {
+                    const GIcon = g.Icon;
+                    return (
+                      <Opt key={g.value} value={g.value} current={d.primaryGoal} onClick={v => set('primaryGoal', v)}>
+                        <div className="flex items-center gap-2">
+                          <GIcon size={18} className="text-primary-400 shrink-0" />
+                          <div>
+                            <div className="text-sm font-semibold text-white">{g.label}</div>
+                            <div className="text-xs text-dark-400">{g.desc}</div>
+                          </div>
                         </div>
-                      </div>
-                    </Opt>
-                  ))}
+                      </Opt>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -270,7 +308,7 @@ export default function SurveyPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <Opt value="coach" current={d.coachPreference} onClick={v => set('coachPreference', v)}>
                     <div className="flex items-start gap-2">
-                      <span className="text-xl shrink-0">🧑‍🏫</span>
+                      <GraduationCap size={18} className="text-primary-400 shrink-0 mt-0.5" />
                       <div>
                         <div className="text-sm font-semibold text-white">Avec un coach</div>
                         <div className="text-xs text-dark-400">Suivi personnalisé par un pro</div>
@@ -279,7 +317,7 @@ export default function SurveyPage() {
                   </Opt>
                   <Opt value="autonome" current={d.coachPreference} onClick={v => set('coachPreference', v)}>
                     <div className="flex items-start gap-2">
-                      <span className="text-xl shrink-0">🎧</span>
+                      <Headphones size={18} className="text-primary-400 shrink-0 mt-0.5" />
                       <div>
                         <div className="text-sm font-semibold text-white">En autonomie</div>
                         <div className="text-xs text-dark-400">Je m'entraîne seul(e)</div>
@@ -352,11 +390,11 @@ export default function SurveyPage() {
               <div>
                 <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">Équipement disponible</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {[['aucun','🏠','Aucun'],['basique','🪑','Basique'],['salle','🏋️','Salle complète']].map(([v,e,l]) => (
-                    <Opt key={v} value={v} current={d.equipment} onClick={v => set('equipment', v)}>
+                  {EQUIPMENT.map(({ value, Icon: EIcon, label }) => (
+                    <Opt key={value} value={value} current={d.equipment} onClick={v => set('equipment', v)}>
                       <div className="text-center">
-                        <div className="text-xl">{e}</div>
-                        <div className="text-xs text-dark-400 mt-0.5">{l}</div>
+                        <EIcon size={20} className="mx-auto text-primary-400 mb-1" />
+                        <div className="text-xs text-dark-400">{label}</div>
                       </div>
                     </Opt>
                   ))}
@@ -377,15 +415,15 @@ export default function SurveyPage() {
               <div>
                 <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">Types d'entraînement favoris</p>
                 <div className="grid grid-cols-4 gap-2">
-                  {WORKOUT_TYPES.map(wt => (
-                    <button key={wt.value} type="button" onClick={() => toggleWT(wt.value)}
+                  {WORKOUT_TYPES.map(({ value, Icon: WIcon, label }) => (
+                    <button key={value} type="button" onClick={() => toggleWT(value)}
                       className={`p-3 rounded-xl border-2 text-center transition-all ${
-                        d.workoutTypes.includes(wt.value)
+                        d.workoutTypes.includes(value)
                           ? 'border-primary-500 bg-primary-500/10'
                           : 'border-dark-700 bg-dark-800 hover:border-dark-500'
                       }`}>
-                      <div className="text-2xl">{wt.emoji}</div>
-                      <div className="text-xs text-dark-400 mt-0.5">{wt.label}</div>
+                      <WIcon size={18} className="mx-auto text-primary-400 mb-1" />
+                      <div className="text-xs text-dark-400">{label}</div>
                     </button>
                   ))}
                 </div>
@@ -394,12 +432,12 @@ export default function SurveyPage() {
               <div>
                 <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">Heure préférée d'entraînement</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {[['matin','🌅','Matin','6h–12h'],['apres_midi','☀️','Après-midi','12h–17h'],['soir','🌙','Soir','17h–22h']].map(([v,e,l,h]) => (
-                    <Opt key={v} value={v} current={d.preferredTime} onClick={v => set('preferredTime', v)}>
+                  {TIMES.map(({ value, Icon: TIcon, label, hours }) => (
+                    <Opt key={value} value={value} current={d.preferredTime} onClick={v => set('preferredTime', v)}>
                       <div className="text-center">
-                        <div className="text-xl">{e}</div>
-                        <div className="text-xs font-semibold text-white mt-0.5">{l}</div>
-                        <div className="text-xs text-dark-400">{h}</div>
+                        <TIcon size={18} className="mx-auto text-primary-400 mb-1" />
+                        <div className="text-xs font-semibold text-white">{label}</div>
+                        <div className="text-xs text-dark-400">{hours}</div>
                       </div>
                     </Opt>
                   ))}
@@ -409,12 +447,11 @@ export default function SurveyPage() {
               <div>
                 <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider mb-2">Régime alimentaire</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {[['omnivore','🍖','Omnivore'],['vegetarien','🥗','Végétarien'],['vegan','🌱','Végétalien'],
-                    ['keto','🥩','Kéto'],['sans_gluten','🌾','Sans gluten'],['autre','🍽️','Autre']].map(([v,e,l]) => (
-                    <Opt key={v} value={v} current={d.dietType} onClick={v => set('dietType', v)}>
+                  {DIETS.map(({ value, Icon: DIcon, label }) => (
+                    <Opt key={value} value={value} current={d.dietType} onClick={v => set('dietType', v)}>
                       <div className="flex items-center gap-2">
-                        <span className="text-xl">{e}</span>
-                        <span className="text-sm text-white">{l}</span>
+                        <DIcon size={16} className="text-primary-400 shrink-0" />
+                        <span className="text-sm text-white">{label}</span>
                       </div>
                     </Opt>
                   ))}
@@ -444,12 +481,15 @@ export default function SurveyPage() {
               {/* Body type */}
               <div className="bg-dark-800 border border-primary-500/30 rounded-2xl p-4">
                 <div className="flex items-start gap-3">
-                  <span className="text-3xl shrink-0">💪</span>
+                  <Dumbbell size={22} className="text-primary-400 shrink-0 mt-0.5" />
                   <div>
                     <div className="text-xs text-dark-400 uppercase tracking-wider">Type de corps</div>
                     <div className="font-bold text-white text-base mt-0.5">{plan.bodyLabel}</div>
                     <p className="text-xs text-dark-400 mt-1 leading-relaxed">{plan.bodyDesc}</p>
-                    <p className="text-xs text-primary-400 mt-2">💡 {plan.bodyTip}</p>
+                    <div className="flex items-start gap-1.5 mt-2">
+                      <Lightbulb size={12} className="text-primary-400 shrink-0 mt-0.5" />
+                      <p className="text-xs text-primary-400 leading-relaxed">{plan.bodyTip}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -457,7 +497,7 @@ export default function SurveyPage() {
               {/* Program */}
               <div className="bg-dark-800 border border-dark-700 rounded-2xl p-4">
                 <div className="flex items-start gap-3">
-                  <span className="text-3xl shrink-0">🏆</span>
+                  <Trophy size={22} className="text-yellow-400 shrink-0 mt-0.5" />
                   <div>
                     <div className="text-xs text-dark-400 uppercase tracking-wider">Programme recommandé</div>
                     <div className="font-bold text-white text-base mt-0.5">{plan.program.name}</div>
@@ -486,7 +526,7 @@ export default function SurveyPage() {
               {d.coachPreference === 'coach' ? (
                 <div className="rounded-2xl p-4" style={{ background: '#f9731610', border: '1px solid #f9731640' }}>
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl shrink-0">🧑‍🏫</span>
+                    <GraduationCap size={20} className="text-primary-400 shrink-0 mt-0.5" />
                     <div>
                       <div className="text-xs font-semibold text-primary-400 uppercase tracking-wider mb-1">Suivi par un coach</div>
                       <p className="text-xs text-dark-300 leading-relaxed">
@@ -498,7 +538,7 @@ export default function SurveyPage() {
               ) : (
                 <div className="rounded-2xl p-4" style={{ background: '#6d28d910', border: '1px solid #6d28d940' }}>
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl shrink-0">🎧</span>
+                    <Headphones size={20} className="text-purple-400 shrink-0 mt-0.5" />
                     <div>
                       <div className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-1">Mode autonome</div>
                       <p className="text-xs text-dark-300 leading-relaxed">
@@ -512,7 +552,7 @@ export default function SurveyPage() {
               {/* Nutrition */}
               <div className="rounded-2xl p-4" style={{ background: '#052e1622', border: '1px solid #10b98130' }}>
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl shrink-0">🥗</span>
+                  <Leaf size={20} className="text-emerald-400 shrink-0 mt-0.5" />
                   <div>
                     <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1">Conseil nutrition</div>
                     <p className="text-xs text-dark-300 leading-relaxed">{plan.nutritionTip}</p>
@@ -538,7 +578,7 @@ export default function SurveyPage() {
             ) : (
               <button type="button" onClick={finish} disabled={submitting}
                 className="btn-primary w-full flex items-center justify-center gap-2 py-3">
-                {submitting ? 'Enregistrement…' : '🚀 Commencer mon aventure'}
+                {submitting ? 'Enregistrement…' : 'Commencer mon aventure'}
               </button>
             )}
           </div>

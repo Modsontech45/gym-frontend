@@ -1,22 +1,22 @@
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { LayoutDashboard, Rss, Dumbbell, MessageCircle, User } from 'lucide-react';
+import { LayoutDashboard, Rss, Dumbbell, MessageCircle, User, LogOut } from 'lucide-react';
 import clsx from 'clsx';
 
-export default function MobileNav() {
-  const { user } = useAuthStore();
+const NAV_ITEMS = [
+  { to: '/dashboard', Icon: LayoutDashboard },
+  { to: '/feed',      Icon: Rss },
+  { to: '/workouts',  Icon: Dumbbell },
+  { to: '/messages',  Icon: MessageCircle },
+  { to: '/profile',   Icon: User },
+];
 
-  const items = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'dashboard' },
-    { to: '/feed', icon: Rss, label: 'feed' },
-    { to: '/workouts', icon: Dumbbell, label: 'workouts' },
-    { to: '/messages', icon: MessageCircle, label: 'messages' },
-    { to: '/profile', icon: User, label: 'profile' },
-  ];
+export default function MobileNav() {
+  const { logout } = useAuthStore();
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-dark-800 border-t border-dark-700 flex z-50">
-      {items.map(({ to, icon: Icon, label }) => (
+      {NAV_ITEMS.map(({ to, Icon }) => (
         <NavLink
           key={to}
           to={to}
@@ -28,6 +28,12 @@ export default function MobileNav() {
           <Icon size={22} />
         </NavLink>
       ))}
+      <button
+        onClick={logout}
+        className="flex-1 flex items-center justify-center py-4 text-dark-500 hover:text-red-400 transition-colors"
+      >
+        <LogOut size={22} />
+      </button>
     </nav>
   );
 }
