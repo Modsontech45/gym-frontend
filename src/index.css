@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === Theme variables === */
+:root {
+  /* Dark theme (default) */
+  --dark-900: 15 23 42;
+  --dark-800: 30 41 59;
+  --dark-700: 51 65 85;
+  --dark-600: 71 85 105;
+  --dark-500: 100 116 139;
+  --dark-400: 148 163 184;
+  --text-base: 241 245 249;
+}
+
+[data-theme="light"] {
+  --dark-900: 248 250 252;
+  --dark-800: 255 255 255;
+  --dark-700: 241 245 249;
+  --dark-600: 226 232 240;
+  --dark-500: 100 116 139;
+  --dark-400: 100 116 139;
+  --text-base: 15 23 42;
+}
+
+@layer base {
+  body {
+    background-color: rgb(var(--dark-900));
+    color: rgb(var(--text-base));
+    @apply font-sans;
+  }
+  * {
+    @apply box-border;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 text-white font-semibold px-4 py-2 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply bg-dark-700 hover:bg-dark-600 font-semibold px-4 py-2 rounded-xl transition-all duration-200;
+    color: rgb(var(--text-base));
+  }
+  .card {
+    @apply bg-dark-800 rounded-2xl p-4 border border-dark-700;
+  }
+  .input {
+    @apply w-full bg-dark-700 border border-dark-600 placeholder-dark-500 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-500 transition-colors;
+    color: rgb(var(--text-base));
+  }
+  .label {
+    @apply block text-sm font-medium text-dark-500 mb-1;
+  }
+}
+
+/* Override hardcoded text-white in JSX for light mode */
+[data-theme="light"] .text-white {
+  color: rgb(15 23 42);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: rgb(var(--dark-800)); }
+::-webkit-scrollbar-thumb { background: #f97316; border-radius: 4px; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
