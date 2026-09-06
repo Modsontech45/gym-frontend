@@ -46,10 +46,30 @@ export const usersApi = {
 // Subscriptions
 export const subsApi = {
   getMy: () => api.get('/subscriptions/my'),
+  getAll: () => api.get('/subscriptions'),
   getClientSubs: (clientId) => api.get(`/subscriptions/client/${clientId}`),
   create: (data) => api.post('/subscriptions', data),
   update: (id, data) => api.put(`/subscriptions/${id}`, data),
   credit: (id, amount) => api.post(`/subscriptions/${id}/credit`, { amount }),
+};
+
+// Plans (catalog)
+export const plansApi = {
+  getAll: () => api.get('/plans'),
+  create: (data) => api.post('/plans', data),
+  update: (id, data) => api.put(`/plans/${id}`, data),
+  delete: (id) => api.delete(`/plans/${id}`),
+};
+
+// Promotions
+export const promotionsApi = {
+  getAll: () => api.get('/promotions'),
+  getActive: () => api.get('/promotions/active'),
+  validate: (code) => api.get(`/promotions/validate/${code}`),
+  create: (data) => api.post('/promotions', data),
+  update: (id, data) => api.put(`/promotions/${id}`, data),
+  toggle: (id) => api.put(`/promotions/${id}/toggle`),
+  delete: (id) => api.delete(`/promotions/${id}`),
 };
 
 // Posts
