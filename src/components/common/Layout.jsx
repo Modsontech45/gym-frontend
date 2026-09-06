@@ -1,9 +1,17 @@
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import MobileNav from './MobileNav';
 
 export default function Layout() {
+  const { user } = useAuthStore();
+
+  // Clients must complete the onboarding survey before accessing the app
+  if (user?.role === 'client' && user?.surveyCompleted === false) {
+    return <Navigate to="/survey" replace />;
+  }
+
   return (
     <div className="flex h-screen bg-dark-900 overflow-hidden">
       <Sidebar />
