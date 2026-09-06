@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/authStore';
+import { useUIStore } from '../../store/uiStore';
 import { subsApi, messagesApi, notificationsApi } from '../../services/api';
 import Avatar from './Avatar';
 import {
   LayoutDashboard, Rss, Dumbbell, MessageCircle, User,
-  Menu, LogOut, CreditCard, Clock, Settings, X, ChevronRight, Bell,
+  Menu, LogOut, CreditCard, Clock, Settings, X, ChevronRight, Bell, Plus,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -36,6 +37,7 @@ export default function MobileNav() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { openCompose } = useUIStore();
   const [open, setOpen] = useState(false);
   const drawerRef = useRef(null);
 
@@ -99,6 +101,14 @@ export default function MobileNav() {
             </span>
           </NavLink>
         ))}
+
+        {/* Plus / compose button */}
+        <button
+          onClick={openCompose}
+          className="flex-1 flex items-center justify-center py-4 text-dark-500 hover:text-primary-400 transition-colors"
+        >
+          <Plus size={24} />
+        </button>
 
         {/* Menu button with notification badge */}
         <button

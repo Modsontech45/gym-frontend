@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bell, Sun, Moon } from 'lucide-react';
+import { Bell, Sun, Moon, PlusCircle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationsApi } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { useUIStore } from '../../store/uiStore';
 import i18n from '../../i18n';
 
 export default function TopBar() {
@@ -25,6 +26,7 @@ export default function TopBar() {
   });
 
   const { theme, toggleTheme } = useThemeStore();
+  const { openCompose } = useUIStore();
   const unread = notifs.filter(n => !n.isRead).length;
   const changeLanguage = (lang) => { i18n.changeLanguage(lang); };
 
@@ -40,6 +42,14 @@ export default function TopBar() {
       </div>
 
       <div className="flex items-center gap-3">
+        <button
+          onClick={openCompose}
+          className="hidden md:flex items-center gap-2 btn-primary py-2 px-4 text-sm"
+          title="Nouvelle publication"
+        >
+          <PlusCircle size={17} /> Publier
+        </button>
+
         <button
           onClick={toggleTheme}
           className="p-2 rounded-xl bg-dark-700 hover:bg-dark-600 transition-colors"

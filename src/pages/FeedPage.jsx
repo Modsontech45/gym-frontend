@@ -7,7 +7,7 @@ import Avatar from '../components/common/Avatar';
 import {
   Heart, MessageCircle, Image, Send, X,
   Dumbbell, TrendingUp, Trophy, Zap, MessageSquare,
-  MoreHorizontal, Trash2, Share2, Link, Reply,
+  MoreHorizontal, Trash2, Share2, Link, Reply, Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -184,12 +184,13 @@ function PostMenu({ canDelete, onDelete, onShare }) {
 
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-function PostCard({ post, onLike, onComment, onDelete }) {
+function PostCard({ post, onLike, onComment, onDelete, onDeleteComment }) {
   const { user } = useAuthStore();
   const [showComments, setShowComments] = useState(false);
   const [comment, setComment] = useState('');
   const [replyTo, setReplyTo] = useState(null); // { name }
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDeleteComment, setConfirmDeleteComment] = useState(null); // commentId
   const [showShare, setShowShare] = useState(false);
   const inputRef = useRef();
 
@@ -281,7 +282,9 @@ function PostCard({ post, onLike, onComment, onDelete }) {
         {/* Comments */}
         {showComments && (
           <div className="mt-3 space-y-2">
-            {comments.map(c => (
+            {comments.map(c => {
+              const canDeleteComment = user?.id === c.author?.id || user?.role === 'admin';
+              return (
               <div key={c.id} className="flex gap-2 group">
                 <Avatar user={c.author} size="sm" />
                 <div className="flex-1 min-w-0">
@@ -296,14 +299,24 @@ function PostCard({ post, onLike, onComment, onDelete }) {
                       <p className="text-sm mt-0.5">{c.content}</p>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleReply(`${c.author?.firstName} ${c.author?.lastName}`)}
-                    className="mt-0.5 ml-1 text-xs text-dark-600 hover:text-primary-400 transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100 focus:opacity-100">
-                    <Reply size={12} /> Répondre
-                  </button>
+                  <div className="flex items-center gap-2 mt-0.5 ml-1">
+                    <button
+                      onClick={() => handleReply(`${c.author?.firstName} ${c.author?.lastName}`)}
+                      className="text-xs text-dark-600 hover:text-primary-400 transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100 focus:opacity-100">
+                      <Reply size={12} /> Répondre
+                    </button>
+                    {canDeleteComment && (
+                      <button
+                        onClick={() => setConfirmDeleteComment(c.id)}
+                        className="text-xs text-dark-600 hover:text-red-400 transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100 focus:opacity-100">
+                        <Trash2 size={12} /> Supprimer
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             {/* Reply indicator */}
             {replyTo && (
@@ -338,6 +351,22 @@ function PostCard({ post, onLike, onComment, onDelete }) {
           onConfirm={() => { onDelete(post.id); setConfirmDelete(false); }}
           onCancel={() => setConfirmDelete(false)}
         />
+      )}
+      {confirmDeleteComment && (
+        <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setConfirmDeleteComment(null)} />
+          <div className="relative z-10 bg-dark-800 border border-dark-700 rounded-2xl p-6 mx-4 mb-6 sm:mb-0 w-full max-w-sm shadow-2xl">
+            <p className="font-semibold text-white text-center mb-1">Supprimer ce commentaire ?</p>
+            <p className="text-sm text-dark-500 text-center mb-5">Cette action est irréversible.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDeleteComment(null)} className="flex-1 btn-secondary">Annuler</button>
+              <button onClick={() => { onDeleteComment(post.id, confirmDeleteComment); setConfirmDeleteComment(null); }}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-xl transition-colors">
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {showShare && <ShareModal post={post} onClose={() => setShowShare(false)} />}
     </>
@@ -388,6 +417,15 @@ export default function FeedPage() {
   const addComment = useMutation({
     mutationFn: ({ postId, content }) => postsApi.addComment(postId, content),
     onSuccess: () => queryClient.invalidateQueries(['feed']),
+  });
+
+  const deleteComment = useMutation({
+    mutationFn: ({ postId, commentId }) => postsApi.deleteComment(postId, commentId),
+    onSuccess: (_, { postId }) => {
+      queryClient.invalidateQueries(['comments', postId]);
+      queryClient.invalidateQueries(['feed']);
+    },
+    onError: () => toast.error('Erreur lors de la suppression'),
   });
 
   const handleSubmit = (e) => {
@@ -472,9 +510,15 @@ export default function FeedPage() {
               <Image size={18} /> Photo / Vidéo
             </button>
             <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleFile} className="hidden" />
-            <button type="submit" disabled={createPost.isPending || compressing} className="btn-primary flex items-center gap-2">
-              <Send size={16} />
-              {compressing ? 'Vérification…' : createPost.isPending && media?.type?.startsWith('video/') ? 'Compression…' : 'Publier'}
+            <button type="submit" disabled={createPost.isPending || compressing}
+              className="btn-primary flex items-center gap-2 min-w-[110px] justify-center">
+              {createPost.isPending ? (
+                <><Loader2 size={16} className="animate-spin" /> Publication…</>
+              ) : compressing ? (
+                <><Loader2 size={16} className="animate-spin" /> Vérification…</>
+              ) : (
+                <><Send size={16} /> Publier</>
+              )}
             </button>
           </div>
         </form>
@@ -485,7 +529,8 @@ export default function FeedPage() {
         <PostCard key={post.id} post={post}
           onLike={(id) => likePost.mutate(id)}
           onDelete={(id) => deletePost.mutate(id)}
-          onComment={(postId, content) => addComment.mutate({ postId, content })} />
+          onComment={(postId, content) => addComment.mutate({ postId, content })}
+          onDeleteComment={(postId, commentId) => deleteComment.mutate({ postId, commentId })} />
       ))}
 
       {isFetching && <div className="text-center text-dark-500 py-4">{t('loading')}</div>}

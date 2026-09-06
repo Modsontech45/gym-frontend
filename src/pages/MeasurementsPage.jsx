@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { measurementsApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { Ruler, Plus, TrendingUp, X } from 'lucide-react';
+import { Ruler, Plus, TrendingUp, X, Pencil, Trash2, Check } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -13,7 +13,9 @@ export default function MeasurementsPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const { register, handleSubmit, reset } = useForm();
+  const [editingId, setEditingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const { register, handleSubmit, reset, setValue } = useForm();
 
   const { data: measurements = [] } = useQuery({
     queryKey: ['measurements'],
@@ -25,6 +27,25 @@ export default function MeasurementsPage() {
     onSuccess: () => { queryClient.invalidateQueries(['measurements']); setShowForm(false); reset(); toast.success('Mesures enregistrées !'); },
     onError: () => toast.error(t('error')),
   });
+
+  const update = useMutation({
+    mutationFn: ({ id, data }) => measurementsApi.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries(['measurements']); setEditingId(null); reset(); toast.success('Mesures mises à jour !'); },
+    onError: () => toast.error(t('error')),
+  });
+
+  const remove = useMutation({
+    mutationFn: (id) => measurementsApi.delete(id),
+    onSuccess: () => { queryClient.invalidateQueries(['measurements']); setConfirmDeleteId(null); toast.success('Mesures supprimées'); },
+    onError: () => toast.error(t('error')),
+  });
+
+  const startEdit = (m) => {
+    setEditingId(m.id);
+    setShowForm(false);
+    ['weight','height','bodyFat','muscleMass','chest','waist','hips','arms','notes'].forEach(k => setValue(k, m[k] || ''));
+    setValue('measuredAt', m.measuredAt ? m.measuredAt.split('T')[0] : '');
+  };
 
   const chartData = [...measurements].reverse().map(m => ({
     date: new Date(m.measuredAt).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
@@ -74,13 +95,13 @@ export default function MeasurementsPage() {
         </div>
       )}
 
-      {showForm && (
+      {(showForm || editingId) && (
         <div className="card border border-primary-500/30">
           <div className="flex justify-between mb-4">
-            <h2 className="font-bold">Nouvelles mesures</h2>
-            <button onClick={() => setShowForm(false)}><X size={18} className="text-dark-500" /></button>
+            <h2 className="font-bold">{editingId ? 'Modifier les mesures' : 'Nouvelles mesures'}</h2>
+            <button onClick={() => { setShowForm(false); setEditingId(null); reset(); }}><X size={18} className="text-dark-500" /></button>
           </div>
-          <form onSubmit={handleSubmit(d => add.mutate(d))} className="space-y-3">
+          <form onSubmit={handleSubmit(d => editingId ? update.mutate({ id: editingId, data: d }) : add.mutate(d))} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="label">{t('weight')}</label>
@@ -124,10 +145,30 @@ export default function MeasurementsPage() {
               <textarea {...register('notes')} className="input resize-none" rows={2} />
             </div>
             <div className="flex gap-3">
-              <button type="submit" disabled={add.isPending} className="btn-primary flex-1">{t('save')}</button>
-              <button type="button" onClick={() => setShowForm(false)} className="btn-secondary flex-1">{t('cancel')}</button>
+              <button type="submit" disabled={add.isPending || update.isPending} className="btn-primary flex-1 flex items-center justify-center gap-2">
+                <Check size={16} /> {t('save')}
+              </button>
+              <button type="button" onClick={() => { setShowForm(false); setEditingId(null); reset(); }} className="btn-secondary flex-1">{t('cancel')}</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Confirm delete modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setConfirmDeleteId(null)} />
+          <div className="relative z-10 bg-dark-800 border border-dark-700 rounded-2xl p-6 mx-4 mb-6 sm:mb-0 w-full max-w-sm shadow-2xl">
+            <p className="font-semibold text-white text-center mb-1">Supprimer ces mesures ?</p>
+            <p className="text-sm text-dark-500 text-center mb-5">Cette action est irréversible.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 btn-secondary">Annuler</button>
+              <button onClick={() => remove.mutate(confirmDeleteId)}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-xl transition-colors">
+                Supprimer
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -136,6 +177,16 @@ export default function MeasurementsPage() {
           <div key={m.id} className="card">
             <div className="flex justify-between items-start">
               <p className="font-medium">{new Date(m.measuredAt).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <div className="flex items-center gap-1">
+                <button onClick={() => startEdit(m)}
+                  className="p-1.5 rounded-lg text-dark-500 hover:text-primary-400 hover:bg-dark-700 transition-colors">
+                  <Pencil size={15} />
+                </button>
+                <button onClick={() => setConfirmDeleteId(m.id)}
+                  className="p-1.5 rounded-lg text-dark-500 hover:text-red-400 hover:bg-dark-700 transition-colors">
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-2 mt-3">
               {m.weight && <div className="text-center"><p className="font-bold text-primary-400">{m.weight} kg</p><p className="text-xs text-dark-500">Poids</p></div>}

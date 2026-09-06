@@ -81,6 +81,7 @@ export const postsApi = {
   like: (id) => api.post(`/posts/${id}/like`),
   getComments: (id) => api.get(`/posts/${id}/comments`),
   addComment: (id, content) => api.post(`/posts/${id}/comments`, { content }),
+  deleteComment: (postId, commentId) => api.delete(`/posts/${postId}/comments/${commentId}`),
 };
 
 // Workouts
