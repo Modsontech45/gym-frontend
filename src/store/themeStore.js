@@ -7,6 +7,6 @@ export const useThemeStore = create(
       theme: 'dark',
       toggleTheme: () => set(s => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
     }),
-    { name: 'gympro-theme' }
+    { name: 'yunfit-theme' }
   )
 );

@@ -36,7 +36,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-500/20 rounded-2xl mb-4">
             <Dumbbell size={32} className="text-primary-500" />
           </div>
-          <h1 className="text-3xl font-extrabold text-white">GymPro</h1>
+          <h1 className="text-3xl font-extrabold text-white">Yunfit</h1>
           <p className="text-dark-500 mt-2">{t('tagline')}</p>
         </div>
 
@@ -66,8 +66,8 @@ export default function LoginPage() {
           </p>
           <div className="mt-4 p-3 bg-dark-700 rounded-xl text-xs text-dark-500">
             <p className="font-medium mb-1">Comptes de démonstration :</p>
-            <p>Admin: admin@gympro.fr / Admin2024!</p>
-            <p>Coach: coach@gympro.fr / Coach2024!</p>
+            <p>Admin: admin@yunfit.fr / Admin2024!</p>
+            <p>Coach: coach@yunfit.fr / Coach2024!</p>
             <p>Client: marie@example.fr / Client2024!</p>
           </div>
         </div>

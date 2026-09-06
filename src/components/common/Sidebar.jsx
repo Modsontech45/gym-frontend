@@ -29,7 +29,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden md:flex flex-col w-64 bg-dark-800 border-r border-dark-700 py-6">
       <div className="px-6 mb-8">
-        <h1 className="text-2xl font-extrabold text-primary-500">GymPro</h1>
+        <h1 className="text-2xl font-extrabold text-primary-500">Yunfit</h1>
         <p className="text-xs text-dark-500 mt-1">{t('tagline')}</p>
       </div>
 

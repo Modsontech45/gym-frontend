@@ -10,6 +10,6 @@ export const useAuthStore = create(
       updateUser: (user) => set({ user }),
       logout: () => set({ user: null, token: null }),
     }),
-    { name: 'gympro-auth' }
+    { name: 'yunfit-auth' }
   )
 );

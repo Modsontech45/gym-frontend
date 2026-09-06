@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'GymPro - Coach & Fitness',
-        short_name: 'GymPro',
+        name: 'Yunfit - Coach & Fitness',
+        short_name: 'Yunfit',
         description: 'Gérez votre parcours fitness avec votre coach personnel',
         theme_color: '#f97316',
         background_color: '#0f172a',

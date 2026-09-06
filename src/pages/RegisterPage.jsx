@@ -75,7 +75,7 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-500/20 rounded-2xl mb-2">
             <Dumbbell size={24} className="text-primary-500" />
           </div>
-          <h1 className="text-xl font-extrabold text-white">GymPro</h1>
+          <h1 className="text-xl font-extrabold text-white">Yunfit</h1>
           <p className="text-dark-500 text-xs mt-0.5">Créez votre compte gratuitement</p>
         </div>
 

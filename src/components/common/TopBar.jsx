@@ -31,7 +31,7 @@ export default function TopBar() {
   return (
     <header className="bg-dark-800 border-b border-dark-700 px-4 md:px-6 h-16 flex items-center justify-between">
       <div className="md:hidden">
-        <h1 className="text-xl font-extrabold text-primary-500">GymPro</h1>
+        <h1 className="text-xl font-extrabold text-primary-500">Yunfit</h1>
       </div>
       <div className="hidden md:block">
         <h2 className="text-lg font-semibold text-white">
