@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { checkInsApi } from '../services/api';
-import { ClipboardList, CheckCircle } from 'lucide-react';
+import { ClipboardList, CheckCircle, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const SCALE_LABELS = {
@@ -183,6 +183,20 @@ export default function CheckInPage() {
                   </div>
                   {ci.wins && <p className="text-xs text-green-400 mt-2">🏆 {ci.wins}</p>}
                   {ci.struggles && <p className="text-xs text-orange-400 mt-1">🤔 {ci.struggles}</p>}
+                  {ci.coachFeedback && (
+                    <div className="mt-3 p-3 bg-primary-500/10 border border-primary-500/30 rounded-xl">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <MessageSquare size={12} className="text-primary-400" />
+                        <span className="text-xs text-primary-400 font-semibold">Réponse de votre coach</span>
+                        {ci.coachFeedbackAt && (
+                          <span className="text-xs text-dark-600 ml-auto">
+                            {new Date(ci.coachFeedbackAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-dark-200">{ci.coachFeedback}</p>
+                    </div>
+                  )}
                 </div>
               );
             })}

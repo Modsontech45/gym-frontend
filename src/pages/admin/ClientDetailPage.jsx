@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi, subsApi, workoutsApi, measurementsApi, coachNotesApi, checkInsApi } from '../../services/api';
 import ProgressPhotosPage from '../ProgressPhotosPage';
-import { ArrowLeft, MessageCircle, CreditCard, Dumbbell, Plus, X, TrendingUp, TrendingDown, Minus, Activity, StickyNote, Pin, Pencil, Trash2, ClipboardList, ExternalLink } from 'lucide-react';
+import { ArrowLeft, MessageCircle, CreditCard, Dumbbell, Plus, X, TrendingUp, TrendingDown, Minus, Activity, StickyNote, Pin, Pencil, Trash2, ClipboardList, ExternalLink, Send, MessageSquare } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import {
@@ -47,6 +47,7 @@ export default function ClientDetailPage() {
   const [showMeasForm, setShowMeasForm] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [editingNoteId, setEditingNoteId] = useState(null);
+  const [feedbackTexts, setFeedbackTexts] = useState({});
   const [editNoteText, setEditNoteText] = useState('');
   const [activeMetric, setActiveMetric] = useState('poids');
   const { register: regSub, handleSubmit: submitSub, reset: resetSub } = useForm();
@@ -97,6 +98,16 @@ export default function ClientDetailPage() {
   });
 
   const togglePin = (note) => updateNote.mutate({ noteId: note.id, data: { pinned: !note.pinned } });
+
+  const addFeedback = useMutation({
+    mutationFn: ({ checkInId, feedback }) => checkInsApi.addFeedback(checkInId, feedback),
+    onSuccess: (_, { checkInId }) => {
+      queryClient.invalidateQueries(['client-checkins', id]);
+      setFeedbackTexts(prev => ({ ...prev, [checkInId]: '' }));
+      toast.success('Feedback envoyé au client !');
+    },
+    onError: () => toast.error(t('error')),
+  });
 
   const createSub = useMutation({
     mutationFn: (data) => subsApi.create({ ...data, userId: id }),
@@ -370,6 +381,37 @@ export default function ClientDetailPage() {
                     {ci.wins && <p className="text-sm text-green-400 mb-1">🏆 {ci.wins}</p>}
                     {ci.struggles && <p className="text-sm text-orange-400 mb-1">🤔 {ci.struggles}</p>}
                     {ci.notes && <p className="text-sm text-dark-400 italic">{ci.notes}</p>}
+
+                    {/* Coach feedback */}
+                    {ci.coachFeedback && (
+                      <div className="mt-3 p-3 bg-primary-500/10 border border-primary-500/30 rounded-xl">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <MessageSquare size={12} className="text-primary-400" />
+                          <span className="text-xs text-primary-400 font-medium">Feedback coach</span>
+                          <span className="text-xs text-dark-600 ml-auto">
+                            {new Date(ci.coachFeedbackAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-dark-200">{ci.coachFeedback}</p>
+                      </div>
+                    )}
+
+                    <div className="mt-3 flex gap-2">
+                      <textarea
+                        value={feedbackTexts[ci.id] || ''}
+                        onChange={e => setFeedbackTexts(prev => ({ ...prev, [ci.id]: e.target.value }))}
+                        rows={2}
+                        className="input resize-none flex-1 text-sm"
+                        placeholder={ci.coachFeedback ? 'Mettre à jour le feedback…' : 'Écrire un feedback pour ce client…'}
+                      />
+                      <button
+                        disabled={!feedbackTexts[ci.id]?.trim() || addFeedback.isPending}
+                        onClick={() => addFeedback.mutate({ checkInId: ci.id, feedback: feedbackTexts[ci.id] })}
+                        className="btn-primary px-3 flex items-center gap-1 shrink-0 self-end"
+                      >
+                        <Send size={14} /> Envoyer
+                      </button>
+                    </div>
                   </div>
                 );
               })}

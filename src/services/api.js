@@ -105,6 +105,7 @@ export const workoutsApi = {
   logSession: (data) => api.post('/workouts/log', data),
   getLogs: () => api.get('/workouts/logs'),
   getClientLogs: (clientId) => api.get(`/workouts/logs/${clientId}`),
+  getStats: () => api.get('/workouts/stats'),
 };
 
 // Messages

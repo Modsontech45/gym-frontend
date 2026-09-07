@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { usersApi, workoutsApi, subsApi, followUpsApi, authApi } from '../services/api';
-import { Users, CreditCard, TrendingUp, UserPlus, Dumbbell, Calendar, CheckCircle, Brain, Utensils, Zap, Clock } from 'lucide-react';
+import { Users, CreditCard, TrendingUp, UserPlus, Dumbbell, Calendar, CheckCircle, Brain, Utensils, Zap, Clock, BarChart2, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const StatCard = ({ icon: Icon, label, value, sub, color = 'primary' }) => (
@@ -44,6 +44,12 @@ export default function DashboardPage() {
   const { data: followUps = [] } = useQuery({
     queryKey: ['followups'],
     queryFn: () => followUpsApi.getAll({ status: 'planifie' }).then(r => r.data),
+  });
+
+  const { data: workoutStats } = useQuery({
+    queryKey: ['workout-stats'],
+    queryFn: () => workoutsApi.getStats().then(r => r.data),
+    enabled: !isAdmin,
   });
 
   const { data: profile } = useQuery({
@@ -242,6 +248,44 @@ export default function DashboardPage() {
               <p className="text-dark-500">Aucun abonnement actif</p>
               <p className="text-sm text-dark-600 mt-1">{t('contact_coach')}</p>
             </div>
+          )}
+
+          {/* Workout frequency strip */}
+          {workoutStats && (
+            <Link to="/workouts" className="card block hover:border-primary-500/30 border border-transparent transition-colors">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-semibold flex items-center gap-2">
+                  <BarChart2 size={18} className="text-primary-400" /> Mes séances
+                </h2>
+                <span className="text-xs text-dark-500">Voir l'historique →</span>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-primary-400">{workoutStats.thisWeek}</p>
+                  <p className="text-xs text-dark-500">Cette semaine</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{workoutStats.thisMonth}</p>
+                  <p className="text-xs text-dark-500">Ce mois</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{workoutStats.allTime}</p>
+                  <p className="text-xs text-dark-500">Total</p>
+                </div>
+              </div>
+              {workoutStats.avgDurationMinutes > 0 && (
+                <div className="flex gap-3 mt-3 pt-3 border-t border-dark-700/50">
+                  <span className="text-xs text-dark-500 flex items-center gap-1">
+                    <Clock size={11} /> {workoutStats.avgDurationMinutes} min moy.
+                  </span>
+                  {workoutStats.avgRating && (
+                    <span className="text-xs text-dark-500 flex items-center gap-1">
+                      <Star size={11} className="text-yellow-400" /> {workoutStats.avgRating}/5 ressenti
+                    </span>
+                  )}
+                </div>
+              )}
+            </Link>
           )}
 
           {activeProgram ? (
