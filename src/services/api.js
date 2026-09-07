@@ -92,11 +92,19 @@ export const postsApi = {
 export const workoutsApi = {
   getMy: () => api.get('/workouts/my'),
   getClientPrograms: (clientId) => api.get(`/workouts/client/${clientId}`),
+  getProgramDetail: (id) => api.get(`/workouts/programs/${id}`),
   createProgram: (data) => api.post('/workouts/programs', data),
+  updateProgram: (id, data) => api.put(`/workouts/programs/${id}`, data),
+  deleteProgram: (id) => api.delete(`/workouts/programs/${id}`),
   addSession: (data) => api.post('/workouts/sessions', data),
+  updateSession: (id, data) => api.put(`/workouts/sessions/${id}`, data),
+  deleteSession: (id) => api.delete(`/workouts/sessions/${id}`),
   addExercise: (data) => api.post('/workouts/exercises', data),
+  updateExercise: (id, data) => api.put(`/workouts/exercises/${id}`, data),
+  deleteExercise: (id) => api.delete(`/workouts/exercises/${id}`),
   logSession: (data) => api.post('/workouts/log', data),
   getLogs: () => api.get('/workouts/logs'),
+  getClientLogs: (clientId) => api.get(`/workouts/logs/${clientId}`),
 };
 
 // Messages
@@ -121,6 +129,38 @@ export const measurementsApi = {
   add: (data) => api.post('/measurements', data),
   update: (id, data) => api.put(`/measurements/${id}`, data),
   delete: (id) => api.delete(`/measurements/${id}`),
+};
+
+// Check-ins (weekly client questionnaire)
+export const checkInsApi = {
+  getMy: () => api.get('/check-ins/my'),
+  getLatest: () => api.get('/check-ins/latest'),
+  getClient: (clientId) => api.get(`/check-ins/client/${clientId}`),
+  submit: (data) => api.post('/check-ins', data),
+};
+
+// Coach notes (private notes on clients)
+export const coachNotesApi = {
+  getClient: (clientId) => api.get(`/coach-notes/client/${clientId}`),
+  create: (data) => api.post('/coach-notes', data),
+  update: (id, data) => api.put(`/coach-notes/${id}`, data),
+  delete: (id) => api.delete(`/coach-notes/${id}`),
+};
+
+// Progress Photos
+export const photosApi = {
+  getMy: () => api.get('/progress-photos/my'),
+  getClient: (clientId) => api.get(`/progress-photos/client/${clientId}`),
+  upload: (formData) => api.post('/progress-photos', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  delete: (id) => api.delete(`/progress-photos/${id}`),
+};
+
+// Appointments (scheduling)
+export const appointmentsApi = {
+  getMy: (params) => api.get('/appointments', { params }),
+  create: (data) => api.post('/appointments', data),
+  update: (id, data) => api.put(`/appointments/${id}`, data),
+  delete: (id) => api.delete(`/appointments/${id}`),
 };
 
 // Notifications

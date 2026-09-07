@@ -12,6 +12,7 @@ import DashboardPage from './pages/DashboardPage';
 import FeedPage from './pages/FeedPage';
 import ClientsPage from './pages/admin/ClientsPage';
 import ClientDetailPage from './pages/admin/ClientDetailPage';
+import ProgramBuilderPage from './pages/admin/ProgramBuilderPage';
 import SubscriptionsPage from './pages/admin/SubscriptionsPage';
 import TeamPage from './pages/admin/TeamPage';
 import WorkoutsPage from './pages/WorkoutsPage';
@@ -20,6 +21,9 @@ import FollowUpsPage from './pages/FollowUpsPage';
 import ProfilePage from './pages/ProfilePage';
 import UserProfilePage from './pages/UserProfilePage';
 import MeasurementsPage from './pages/MeasurementsPage';
+import CheckInPage from './pages/CheckInPage';
+import CalendarPage from './pages/CalendarPage';
+import ProgressPhotosPage from './pages/ProgressPhotosPage';
 import Layout from './components/common/Layout';
 
 const PrivateRoute = ({ children, roles }) => {
@@ -55,8 +59,12 @@ export default function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/user/:userId" element={<UserProfilePage />} />
         <Route path="/measurements" element={<MeasurementsPage />} />
+        <Route path="/check-in" element={<CheckInPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/progress-photos" element={<ProgressPhotosPage />} />
         <Route path="/clients" element={<PrivateRoute roles={['admin', 'coach']}><ClientsPage /></PrivateRoute>} />
         <Route path="/clients/:id" element={<PrivateRoute roles={['admin', 'coach']}><ClientDetailPage /></PrivateRoute>} />
+        <Route path="/programs/builder" element={<PrivateRoute roles={['admin', 'coach']}><ProgramBuilderPage /></PrivateRoute>} />
         <Route path="/subscriptions" element={<PrivateRoute roles={['admin', 'coach']}><SubscriptionsPage /></PrivateRoute>} />
         <Route path="/team" element={<PrivateRoute roles={['admin', 'coach']}><TeamPage /></PrivateRoute>} />
       </Route>

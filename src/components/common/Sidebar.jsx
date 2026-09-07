@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import Avatar from './Avatar';
 import {
   LayoutDashboard, Users, Rss, Dumbbell, MessageCircle,
-  ClipboardCheck, User, CreditCard, Ruler, LogOut, ShieldCheck,
+  ClipboardCheck, User, CreditCard, Ruler, LogOut, ShieldCheck, CalendarDays,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -14,6 +14,7 @@ const navItems = [
   navItem('/dashboard', LayoutDashboard, 'dashboard'),
   navItem('/feed', Rss, 'feed'),
   navItem('/workouts', Dumbbell, 'workouts'),
+  navItem('/calendar', CalendarDays, 'calendar'),
   navItem('/messages', MessageCircle, 'messages'),
   navItem('/followups', ClipboardCheck, 'follow_ups'),
   navItem('/measurements', Ruler, 'measurements'),
