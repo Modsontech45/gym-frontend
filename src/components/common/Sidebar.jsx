@@ -5,6 +5,7 @@ import Avatar from './Avatar';
 import {
   LayoutDashboard, Users, Rss, Dumbbell, MessageCircle,
   ClipboardCheck, User, CreditCard, Ruler, LogOut, ShieldCheck, CalendarDays,
+  BookOpen, Ticket, UserSearch, UserCheck,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -13,6 +14,9 @@ const navItem = (to, icon, label, roles) => ({ to, icon, label, roles });
 const navItems = [
   navItem('/dashboard', LayoutDashboard, 'dashboard'),
   navItem('/feed', Rss, 'feed'),
+  navItem('/gym-catalog', BookOpen, 'gym_catalog'),
+  navItem('/packages', Ticket, 'packages'),
+  navItem('/people', UserSearch, 'people'),
   navItem('/workouts', Dumbbell, 'workouts'),
   navItem('/calendar', CalendarDays, 'calendar'),
   navItem('/messages', MessageCircle, 'messages'),
@@ -20,6 +24,7 @@ const navItems = [
   navItem('/measurements', Ruler, 'measurements'),
   navItem('/clients', Users, 'clients', ['admin', 'coach']),
   navItem('/subscriptions', CreditCard, 'subscriptions', ['admin', 'coach']),
+  navItem('/membership-requests', UserCheck, 'membership_requests', ['admin', 'coach']),
   navItem('/team', ShieldCheck, 'team', ['admin', 'coach']),
   navItem('/profile', User, 'profile'),
 ];

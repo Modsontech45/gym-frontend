@@ -169,3 +169,38 @@ export const notificationsApi = {
   markAllRead: () => api.put('/notifications/read-all'),
   markRead: (id) => api.put(`/notifications/${id}/read`),
 };
+
+// Gym & membership
+export const gymApi = {
+  getGym: () => api.get('/gym'),
+  updateGym: (data) => api.put('/gym', data),
+  getPackages: () => api.get('/gym/packages'),
+  createPackage: (data) => api.post('/gym/packages', data),
+  updatePackage: (id, data) => api.put(`/gym/packages/${id}`, data),
+  deletePackage: (id) => api.delete(`/gym/packages/${id}`),
+  requestMembership: (data) => api.post('/gym/membership/request', data),
+  getMyMembership: () => api.get('/gym/membership/me'),
+  getPendingRequests: () => api.get('/gym/membership/pending'),
+  getAllMembers: (params) => api.get('/gym/membership/all', { params }),
+  reviewMembership: (id, data) => api.put(`/gym/membership/${id}/review`, data),
+};
+
+// Gym program catalog
+export const gymProgramsApi = {
+  list: (params) => api.get('/gym-programs', { params }),
+  listAll: () => api.get('/gym-programs/all'),
+  get: (id) => api.get(`/gym-programs/${id}`),
+  create: (data) => api.post('/gym-programs', data),
+  update: (id, data) => api.put(`/gym-programs/${id}`, data),
+  delete: (id) => api.delete(`/gym-programs/${id}`),
+  enroll: (id) => api.post(`/gym-programs/${id}/enroll`),
+};
+
+// Social: follow & search
+export const socialApi = {
+  follow: (targetId) => api.post(`/follow/${targetId}`),
+  unfollow: (targetId) => api.delete(`/follow/${targetId}`),
+  getFollowers: (userId) => userId ? api.get(`/follow/followers/${userId}`) : api.get('/follow/followers'),
+  getFollowing: (userId) => userId ? api.get(`/follow/following/${userId}`) : api.get('/follow/following'),
+  searchMembers: (q) => api.get('/follow/search', { params: { q } }),
+};

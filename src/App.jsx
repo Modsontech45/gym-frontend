@@ -24,12 +24,21 @@ import MeasurementsPage from './pages/MeasurementsPage';
 import CheckInPage from './pages/CheckInPage';
 import CalendarPage from './pages/CalendarPage';
 import ProgressPhotosPage from './pages/ProgressPhotosPage';
+import GymCatalogPage from './pages/GymCatalogPage';
+import GymPackagesPage from './pages/GymPackagesPage';
+import PeoplePage from './pages/PeoplePage';
+import MembershipRequestsPage from './pages/admin/MembershipRequestsPage';
+import MembershipGatePage from './pages/MembershipGatePage';
 import Layout from './components/common/Layout';
 
 const PrivateRoute = ({ children, roles }) => {
   const { user, token } = useAuthStore();
   if (!token || !user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" replace />;
+  // Gate non-admin/coach users behind membership approval
+  if (user.role === 'client' && user.gymMembership && user.gymMembership.status !== 'approved') {
+    return <MembershipGatePage />;
+  }
   return children;
 };
 
@@ -62,11 +71,15 @@ export default function App() {
         <Route path="/check-in" element={<CheckInPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/progress-photos" element={<ProgressPhotosPage />} />
+        <Route path="/gym-catalog" element={<GymCatalogPage />} />
+        <Route path="/packages" element={<GymPackagesPage />} />
+        <Route path="/people" element={<PeoplePage />} />
         <Route path="/clients" element={<PrivateRoute roles={['admin', 'coach']}><ClientsPage /></PrivateRoute>} />
         <Route path="/clients/:id" element={<PrivateRoute roles={['admin', 'coach']}><ClientDetailPage /></PrivateRoute>} />
         <Route path="/programs/builder" element={<PrivateRoute roles={['admin', 'coach']}><ProgramBuilderPage /></PrivateRoute>} />
         <Route path="/subscriptions" element={<PrivateRoute roles={['admin', 'coach']}><SubscriptionsPage /></PrivateRoute>} />
         <Route path="/team" element={<PrivateRoute roles={['admin', 'coach']}><TeamPage /></PrivateRoute>} />
+        <Route path="/membership-requests" element={<PrivateRoute roles={['admin', 'coach']}><MembershipRequestsPage /></PrivateRoute>} />
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
