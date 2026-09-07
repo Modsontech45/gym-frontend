@@ -137,6 +137,7 @@ export const checkInsApi = {
   getLatest: () => api.get('/check-ins/latest'),
   getClient: (clientId) => api.get(`/check-ins/client/${clientId}`),
   submit: (data) => api.post('/check-ins', data),
+  addFeedback: (id, feedback) => api.put(`/check-ins/${id}/feedback`, { feedback }),
 };
 
 // Coach notes (private notes on clients)
