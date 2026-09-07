@@ -205,4 +205,5 @@ export const socialApi = {
   getFollowers: (userId) => userId ? api.get(`/follow/followers/${userId}`) : api.get('/follow/followers'),
   getFollowing: (userId) => userId ? api.get(`/follow/following/${userId}`) : api.get('/follow/following'),
   searchMembers: (q) => api.get('/follow/search', { params: { q } }),
+  getSuggestions: () => api.get('/follow/suggestions'),
 };
