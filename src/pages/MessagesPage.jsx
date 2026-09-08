@@ -114,6 +114,46 @@ function NewConvModal({ onClose, onStart }) {
   );
 }
 
+// ── Message content renderer (images + bold markdown) ────────────────────────
+
+const IMAGE_URL_RE = /^https?:\/\/(res\.cloudinary\.com\/.+\/image\/upload\/.+|[^\s]+\.(jpg|jpeg|png|gif|webp|avif))(\?[^\s]*)?$/i;
+
+function isImageUrl(line) {
+  return IMAGE_URL_RE.test(line.trim());
+}
+
+function parseBold(text) {
+  const parts = text.split(/\*([^*]+)\*/g);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={i} className="font-semibold">{part}</strong> : part
+  );
+}
+
+function MessageContent({ content }) {
+  const lines = content.split('\n');
+  return (
+    <div className="leading-relaxed space-y-0.5">
+      {lines.map((line, i) => {
+        if (!line.trim()) return <br key={i} />;
+        if (isImageUrl(line.trim())) {
+          return (
+            <a key={i} href={line.trim()} target="_blank" rel="noreferrer" className="block mt-1.5">
+              <img
+                src={line.trim()}
+                alt="image partagée"
+                className="max-w-full rounded-xl block"
+                style={{ maxHeight: 220, objectFit: 'contain' }}
+                onError={e => { e.currentTarget.style.display = 'none'; }}
+              />
+            </a>
+          );
+        }
+        return <p key={i}>{parseBold(line)}</p>;
+      })}
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function MessagesPage() {
@@ -278,7 +318,7 @@ export default function MessagesPage() {
                     <div className={`max-w-xs lg:max-w-sm px-4 py-2.5 rounded-2xl text-sm ${
                       isMe ? 'bg-primary-500 text-white rounded-br-sm' : 'bg-dark-700 rounded-bl-sm'
                     }`}>
-                      <p className="whitespace-pre-line leading-relaxed">{msg.content}</p>
+                      <MessageContent content={msg.content} />
                       <p className={`text-xs mt-1 ${isMe ? 'text-primary-200' : 'text-dark-500'}`}>
                         {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: fr })}
                       </p>

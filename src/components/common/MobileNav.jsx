@@ -7,6 +7,8 @@ import Avatar from './Avatar';
 import {
   LayoutDashboard, Rss, Dumbbell, MessageCircle, User,
   Menu, LogOut, CreditCard, Clock, Settings, X, ChevronRight, Bell, ShoppingBag,
+  BookOpen, Ticket, Search, CalendarDays, ClipboardCheck, Ruler,
+  Users, UserCheck, ShieldCheck,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -18,10 +20,58 @@ const NAV_ITEMS = [
   { to: '/profile',   Icon: User,            key: 'profile' },
 ];
 
+const DRAWER_SECTIONS = [
+  {
+    label: null,
+    items: [
+      { to: '/feed',       Icon: Rss,            label: 'Fil d\'actualité' },
+      { to: '/boutique',   Icon: ShoppingBag,    label: 'Boutique' },
+      { to: '/gym-catalog',Icon: BookOpen,        label: 'Programmes salle' },
+      { to: '/packages',   Icon: Ticket,          label: 'Forfaits' },
+      { to: '/people',     Icon: Search,          label: 'Membres' },
+    ],
+  },
+  {
+    label: 'Fitness',
+    items: [
+      { to: '/workouts',   Icon: Dumbbell,        label: 'Entraînements' },
+      { to: '/calendar',   Icon: CalendarDays,    label: 'Calendrier' },
+      { to: '/followups',  Icon: ClipboardCheck,  label: 'Suivis' },
+      { to: '/measurements', Icon: Ruler,         label: 'Mesures' },
+    ],
+  },
+  {
+    label: 'Administration',
+    roles: ['admin', 'coach'],
+    items: [
+      { to: '/clients',            Icon: Users,      label: 'Clients' },
+      { to: '/subscriptions',      Icon: CreditCard, label: 'Abonnements' },
+      { to: '/membership-requests', Icon: UserCheck, label: 'Adhésions' },
+      { to: '/team',               Icon: ShieldCheck,label: 'Équipe' },
+    ],
+  },
+  {
+    label: 'Compte',
+    items: [
+      { to: '/profile',            Icon: User,     label: 'Mon profil' },
+      { to: '/profile?tab=settings', Icon: Settings, label: 'Paramètres' },
+    ],
+  },
+];
+
 function Badge({ count }) {
   if (!count) return null;
   return (
     <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-primary-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
+
+function InlineBadge({ count }) {
+  if (!count) return null;
+  return (
+    <span className="ml-1.5 min-w-[20px] h-5 px-1.5 bg-primary-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
       {count > 99 ? '99+' : count}
     </span>
   );
@@ -39,7 +89,6 @@ export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const drawerRef = useRef(null);
 
-  // Unread counts — poll every 30s
   const { data: conversations = [] } = useQuery({
     queryKey: ['conversations'],
     queryFn: () => messagesApi.getConversations().then(r => r.data),
@@ -55,7 +104,6 @@ export default function MobileNav() {
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
   const unreadNotifs = notifs.filter(n => !n.isRead).length;
 
-  // Subscription (lazy — only when drawer opens)
   const { data: subs = [] } = useQuery({
     queryKey: ['my-subs'],
     queryFn: () => subsApi.getMy().then(r => r.data),
@@ -65,7 +113,6 @@ export default function MobileNav() {
   const activeSub = subs.find(s => s.status === 'actif');
   const days = daysLeft(activeSub?.endDate);
 
-  // Close on outside tap
   useEffect(() => {
     if (!open) return;
     const close = (e) => {
@@ -77,8 +124,6 @@ export default function MobileNav() {
   }, [open]);
 
   const go = (path) => { setOpen(false); navigate(path); };
-
-  const totalMenuBadge = unreadNotifs; // shown on menu icon when drawer is closed
 
   return (
     <>
@@ -100,36 +145,35 @@ export default function MobileNav() {
           </NavLink>
         ))}
 
-        {/* Menu button with notification badge */}
         <button
           onClick={() => setOpen(true)}
           className="flex-1 flex items-center justify-center py-4 text-dark-500 hover:text-white transition-colors"
         >
           <span className="relative">
             <Menu size={22} />
-            <Badge count={totalMenuBadge} />
+            <Badge count={unreadNotifs} />
           </span>
         </button>
       </nav>
 
-      {/* Backdrop */}
       {open && <div className="md:hidden fixed inset-0 bg-black/60 z-[60]" aria-hidden="true" />}
 
       {/* Slide-up drawer */}
       <div
         ref={drawerRef}
         className={clsx(
-          'md:hidden fixed left-0 right-0 bottom-0 z-[70] bg-dark-800 rounded-t-2xl shadow-2xl transition-transform duration-300',
+          'md:hidden fixed left-0 right-0 bottom-0 z-[70] bg-dark-800 rounded-t-2xl shadow-2xl transition-transform duration-300 flex flex-col',
+          'max-h-[88vh]',
           open ? 'translate-y-0' : 'translate-y-full'
         )}
       >
         {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1">
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
           <div className="w-10 h-1 rounded-full bg-dark-600" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-dark-700">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-dark-700 shrink-0">
           <div className="flex items-center gap-3">
             <Avatar user={user} size="md" clickable={true} />
             <div>
@@ -142,98 +186,102 @@ export default function MobileNav() {
           </button>
         </div>
 
-        {/* Subscription card */}
-        {activeSub ? (
-          <div className="mx-4 mt-4 rounded-xl bg-primary-500/10 border border-primary-500/20 p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-dark-500 mb-0.5">Abonnement actif</p>
-                <p className="font-semibold text-sm text-white">{activeSub.planName}</p>
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Subscription card */}
+          {activeSub ? (
+            <div className="mx-4 mt-4 rounded-xl bg-primary-500/10 border border-primary-500/20 p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-dark-500 mb-0.5">Abonnement actif</p>
+                  <p className="font-semibold text-sm text-white">{activeSub.planName}</p>
+                </div>
+                <CreditCard size={18} className="text-primary-400 shrink-0 mt-0.5" />
               </div>
-              <CreditCard size={18} className="text-primary-400 shrink-0 mt-0.5" />
+              <div className="flex items-center gap-4 mt-3">
+                <div>
+                  <p className="text-xs text-dark-500">Solde</p>
+                  <p className="font-bold text-primary-400">{Math.round(activeSub.balance).toLocaleString('fr-FR')} FCFA</p>
+                </div>
+                <div className="w-px h-8 bg-dark-700" />
+                <div>
+                  <p className="text-xs text-dark-500 flex items-center gap-1"><Clock size={10} /> Jours restants</p>
+                  <p className={clsx('font-bold',
+                    days !== null && days <= 0 ? 'text-red-400' :
+                    days !== null && days <= 7 ? 'text-amber-400' : 'text-white'
+                  )}>
+                    {days === null ? '—' : days <= 0 ? 'Expiré' : `${days} j`}
+                  </p>
+                </div>
+                <div className="w-px h-8 bg-dark-700" />
+                <div>
+                  <p className="text-xs text-dark-500">Séances</p>
+                  <p className="font-bold text-white">{activeSub.sessionsUsed}/{activeSub.sessionsIncluded}</p>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-4 mt-3">
+          ) : (
+            <div className="mx-4 mt-4 rounded-xl bg-dark-700/50 border border-dark-700 p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-dark-500">Solde</p>
-                <p className="font-bold text-primary-400">{Math.round(activeSub.balance).toLocaleString('fr-FR')} FCFA</p>
+                <p className="text-sm text-dark-400">Aucun abonnement actif</p>
+                <p className="text-xs text-dark-600 mt-0.5">Contactez votre coach</p>
               </div>
-              <div className="w-px h-8 bg-dark-700" />
-              <div>
-                <p className="text-xs text-dark-500 flex items-center gap-1"><Clock size={10} /> Jours restants</p>
-                <p className={clsx('font-bold',
-                  days !== null && days <= 0 ? 'text-red-400' :
-                  days !== null && days <= 3 ? 'text-red-400' :
-                  days !== null && days <= 7 ? 'text-amber-400' : 'text-white'
-                )}>
-                  {days === null ? '—' : days <= 0 ? 'Expiré' : `${days} j`}
-                </p>
-              </div>
-              <div className="w-px h-8 bg-dark-700" />
-              <div>
-                <p className="text-xs text-dark-500">Séances</p>
-                <p className="font-bold text-white">{activeSub.sessionsUsed}/{activeSub.sessionsIncluded}</p>
-              </div>
+              <CreditCard size={18} className="text-dark-600" />
             </div>
+          )}
+
+          {/* Messages & Notifs */}
+          <div className="px-4 mt-3 space-y-1">
+            <button onClick={() => go('/messages')}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-dark-700 transition-colors text-sm text-dark-300 hover:text-white">
+              <span className="flex items-center gap-3">
+                <MessageCircle size={18} /> Messages
+                <InlineBadge count={unreadMessages} />
+              </span>
+              <ChevronRight size={16} className="text-dark-600" />
+            </button>
+
+            <button onClick={() => { queryClient.invalidateQueries(['notifications']); go('/dashboard'); }}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-dark-700 transition-colors text-sm text-dark-300 hover:text-white">
+              <span className="flex items-center gap-3">
+                <Bell size={18} /> Notifications
+                <InlineBadge count={unreadNotifs} />
+              </span>
+              <ChevronRight size={16} className="text-dark-600" />
+            </button>
           </div>
-        ) : (
-          <div className="mx-4 mt-4 rounded-xl bg-dark-700/50 border border-dark-700 p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-dark-400">Aucun abonnement actif</p>
-              <p className="text-xs text-dark-600 mt-0.5">Contactez votre coach</p>
-            </div>
-            <CreditCard size={18} className="text-dark-600" />
-          </div>
-        )}
 
-        {/* Menu items */}
-        <div className="px-4 mt-3 space-y-1 pb-2">
-          <button onClick={() => go('/messages')}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-dark-700 transition-colors text-sm text-dark-300 hover:text-white">
-            <span className="flex items-center gap-3">
-              <MessageCircle size={18} /> Messages
-              {unreadMessages > 0 && (
-                <span className="ml-1 min-w-[20px] h-5 px-1.5 bg-primary-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                  {unreadMessages > 99 ? '99+' : unreadMessages}
-                </span>
-              )}
-            </span>
-            <ChevronRight size={16} className="text-dark-600" />
-          </button>
+          {/* Dynamic sections */}
+          {DRAWER_SECTIONS.map((section) => {
+            if (section.roles && !section.roles.includes(user?.role)) return null;
+            return (
+              <div key={section.label || 'main'} className="px-4 mt-3">
+                {section.label && (
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-dark-600 px-4 mb-1">
+                    {section.label}
+                  </p>
+                )}
+                <div className="space-y-1">
+                  {section.items.map(({ to, Icon, label }) => (
+                    <button
+                      key={to}
+                      onClick={() => go(to)}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-dark-700 transition-colors text-sm text-dark-300 hover:text-white"
+                    >
+                      <span className="flex items-center gap-3"><Icon size={18} /> {label}</span>
+                      <ChevronRight size={16} className="text-dark-600" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
 
-          <button onClick={() => { setOpen(false); queryClient.invalidateQueries(['notifications']); go('/dashboard'); }}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-dark-700 transition-colors text-sm text-dark-300 hover:text-white">
-            <span className="flex items-center gap-3">
-              <Bell size={18} /> Notifications
-              {unreadNotifs > 0 && (
-                <span className="ml-1 min-w-[20px] h-5 px-1.5 bg-primary-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                  {unreadNotifs > 99 ? '99+' : unreadNotifs}
-                </span>
-              )}
-            </span>
-            <ChevronRight size={16} className="text-dark-600" />
-          </button>
-
-          <button onClick={() => go('/boutique')}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-dark-700 transition-colors text-sm text-dark-300 hover:text-white">
-            <span className="flex items-center gap-3"><ShoppingBag size={18} /> Boutique</span>
-            <ChevronRight size={16} className="text-dark-600" />
-          </button>
-
-          <button onClick={() => go('/profile')}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-dark-700 transition-colors text-sm text-dark-300 hover:text-white">
-            <span className="flex items-center gap-3"><User size={18} /> Mon profil</span>
-            <ChevronRight size={16} className="text-dark-600" />
-          </button>
-
-          <button onClick={() => go('/profile?tab=settings')}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-dark-700 transition-colors text-sm text-dark-300 hover:text-white">
-            <span className="flex items-center gap-3"><Settings size={18} /> Paramètres</span>
-            <ChevronRight size={16} className="text-dark-600" />
-          </button>
+          <div className="h-2" />
         </div>
 
-        {/* Logout */}
-        <div className="px-4 pb-8 pt-2 border-t border-dark-700 mt-1">
+        {/* Logout — always visible at bottom */}
+        <div className="px-4 pb-8 pt-2 border-t border-dark-700 shrink-0">
           <button
             onClick={() => { setOpen(false); logout(); }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium"
