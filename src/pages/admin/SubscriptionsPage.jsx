@@ -4,7 +4,7 @@ import { usersApi, subsApi, plansApi, promotionsApi } from '../../services/api';
 import {
   CreditCard, Plus, Edit2, Trash2, Check, X,
   Tag, Calendar, Users, Zap,
-  ToggleLeft, ToggleRight,
+  ToggleLeft, ToggleRight, Clock, ThumbsUp,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -115,6 +115,13 @@ function AbonnementsTab({ clients, plans }) {
     onError: () => toast.error('Erreur'),
   });
 
+  const approve = useMutation({
+    mutationFn: (id) => subsApi.approve(id),
+    onSuccess: () => { queryClient.invalidateQueries(['subscriptions']); toast.success('Abonnement approuvé !'); },
+    onError: (err) => toast.error(err.response?.data?.message || 'Erreur'),
+  });
+
+  const pendingSubs = allSubs.filter(s => s.status === 'en_attente');
   const totalBalance = allSubs.reduce((sum, s) => sum + parseFloat(s.balance || 0), 0);
   const activeSubs = allSubs.filter(s => s.status === 'actif').length;
 
@@ -241,9 +248,41 @@ function AbonnementsTab({ clients, plans }) {
         </div>
       )}
 
-      {/* Subscription list */}
+      {/* Pending subscription requests */}
+      {pendingSubs.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-amber-400 flex items-center gap-2">
+            <Clock size={14} /> Demandes en attente ({pendingSubs.length})
+          </h3>
+          {pendingSubs.map(sub => (
+            <div key={sub.id} className="card border border-amber-500/20 bg-amber-500/5">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-sm shrink-0">
+                    {sub.user?.firstName?.[0]}{sub.user?.lastName?.[0]}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-white">{sub.user?.firstName} {sub.user?.lastName}</p>
+                    <p className="text-xs text-dark-500">{sub.planName} · {TYPE_LABEL[sub.planType] || sub.planType}</p>
+                    <p className="text-xs text-dark-600">{Math.round(parseFloat(sub.price)).toLocaleString('fr-FR')} FCFA · {sub.sessionsIncluded} séances</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => approve.mutate(sub.id)}
+                  disabled={approve.isPending}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors text-sm font-semibold shrink-0"
+                >
+                  <ThumbsUp size={15} /> Approuver
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Active/all subscription list */}
       <div className="space-y-3">
-        {allSubs.map(sub => (
+        {allSubs.filter(s => s.status !== 'en_attente').map(sub => (
           <div key={sub.id} className="card">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
@@ -285,7 +324,9 @@ function AbonnementsTab({ clients, plans }) {
             )}
           </div>
         ))}
-        {allSubs.length === 0 && <div className="card text-center py-10 text-dark-500">Aucun abonnement</div>}
+        {allSubs.filter(s => s.status !== 'en_attente').length === 0 && (
+          <div className="card text-center py-10 text-dark-500">Aucun abonnement actif</div>
+        )}
       </div>
     </div>
   );

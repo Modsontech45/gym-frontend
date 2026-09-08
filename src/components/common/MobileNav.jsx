@@ -24,20 +24,18 @@ const DRAWER_SECTIONS = [
   {
     label: null,
     items: [
-      { to: '/feed',       Icon: Rss,            label: 'Fil d\'actualité' },
-      { to: '/boutique',   Icon: ShoppingBag,    label: 'Boutique' },
-      { to: '/gym-catalog',Icon: BookOpen,        label: 'Programmes salle' },
-      { to: '/packages',   Icon: Ticket,          label: 'Forfaits' },
-      { to: '/people',     Icon: Search,          label: 'Membres' },
+      { to: '/boutique',    Icon: ShoppingBag,   label: 'Boutique' },
+      { to: '/gym-catalog', Icon: BookOpen,       label: 'Programmes salle' },
+      { to: '/packages',    Icon: Ticket,         label: 'Forfaits' },
+      { to: '/people',      Icon: Search,         label: 'Membres' },
     ],
   },
   {
     label: 'Fitness',
     items: [
-      { to: '/workouts',   Icon: Dumbbell,        label: 'Entraînements' },
-      { to: '/calendar',   Icon: CalendarDays,    label: 'Calendrier' },
-      { to: '/followups',  Icon: ClipboardCheck,  label: 'Suivis' },
-      { to: '/measurements', Icon: Ruler,         label: 'Mesures' },
+      { to: '/calendar',     Icon: CalendarDays,   label: 'Calendrier' },
+      { to: '/followups',    Icon: ClipboardCheck, label: 'Suivis' },
+      { to: '/measurements', Icon: Ruler,          label: 'Mensurations' },
     ],
   },
   {

@@ -53,8 +53,10 @@ export const subsApi = {
   getMy: () => api.get('/subscriptions/my'),
   getAll: () => api.get('/subscriptions'),
   getClientSubs: (clientId) => api.get(`/subscriptions/client/${clientId}`),
+  request: (planId) => api.post('/subscriptions/request', { planId }),
   create: (data) => api.post('/subscriptions', data),
   update: (id, data) => api.put(`/subscriptions/${id}`, data),
+  approve: (id) => api.post(`/subscriptions/${id}/approve`),
   credit: (id, amount) => api.post(`/subscriptions/${id}/credit`, { amount }),
 };
 
