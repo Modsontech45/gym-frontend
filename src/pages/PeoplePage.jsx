@@ -143,7 +143,7 @@ export default function PeoplePage() {
               className="input w-full pl-10"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Rechercher un membre par nom…"
+              placeholder="Nom, email, objectif, lieu…"
               autoFocus
             />
           </div>
