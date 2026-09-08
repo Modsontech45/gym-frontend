@@ -29,6 +29,7 @@ import GymPackagesPage from './pages/GymPackagesPage';
 import PeoplePage from './pages/PeoplePage';
 import MembershipRequestsPage from './pages/admin/MembershipRequestsPage';
 import MembershipGatePage from './pages/MembershipGatePage';
+import BoutiquePage from './pages/BoutiquePage';
 import Layout from './components/common/Layout';
 
 const PrivateRoute = ({ children, roles }) => {
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="/gym-catalog" element={<GymCatalogPage />} />
         <Route path="/packages" element={<GymPackagesPage />} />
         <Route path="/people" element={<PeoplePage />} />
+        <Route path="/boutique" element={<BoutiquePage />} />
         <Route path="/clients" element={<PrivateRoute roles={['admin', 'coach']}><ClientsPage /></PrivateRoute>} />
         <Route path="/clients/:id" element={<PrivateRoute roles={['admin', 'coach']}><ClientDetailPage /></PrivateRoute>} />
         <Route path="/programs/builder" element={<PrivateRoute roles={['admin', 'coach']}><ProgramBuilderPage /></PrivateRoute>} />

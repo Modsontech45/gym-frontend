@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { messagesApi, socialApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
@@ -103,11 +103,21 @@ function NewConvModal({ onClose, onStart }) {
 export default function MessagesPage() {
   const { userId: otherId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
   const [showNewConv, setShowNewConv] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Pre-fill from product inquiry (?prefill=...)
+  useEffect(() => {
+    const prefill = searchParams.get('prefill');
+    if (prefill && otherId) {
+      setText(decodeURIComponent(prefill));
+      setSearchParams({}, { replace: true });
+    }
+  }, [otherId, searchParams]);
 
   const { data: conversations = [] } = useQuery({
     queryKey: ['conversations'],

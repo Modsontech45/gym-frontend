@@ -202,6 +202,14 @@ export const gymProgramsApi = {
   enroll: (id) => api.post(`/gym-programs/${id}/enroll`),
 };
 
+// Gym shop / products
+export const productsApi = {
+  list: () => api.get('/products'),
+  create: (data) => api.post('/products', data),
+  update: (id, data) => api.put(`/products/${id}`, data),
+  delete: (id) => api.delete(`/products/${id}`),
+};
+
 // Social: follow & search
 export const socialApi = {
   follow: (targetId) => api.post(`/follow/${targetId}`),

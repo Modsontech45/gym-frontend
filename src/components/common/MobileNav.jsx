@@ -6,7 +6,7 @@ import { subsApi, messagesApi, notificationsApi } from '../../services/api';
 import Avatar from './Avatar';
 import {
   LayoutDashboard, Rss, Dumbbell, MessageCircle, User,
-  Menu, LogOut, CreditCard, Clock, Settings, X, ChevronRight, Bell,
+  Menu, LogOut, CreditCard, Clock, Settings, X, ChevronRight, Bell, ShoppingBag,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -210,6 +210,12 @@ export default function MobileNav() {
                 </span>
               )}
             </span>
+            <ChevronRight size={16} className="text-dark-600" />
+          </button>
+
+          <button onClick={() => go('/boutique')}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-dark-700 transition-colors text-sm text-dark-300 hover:text-white">
+            <span className="flex items-center gap-3"><ShoppingBag size={18} /> Boutique</span>
             <ChevronRight size={16} className="text-dark-600" />
           </button>
 
