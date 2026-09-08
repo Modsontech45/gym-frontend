@@ -117,15 +117,25 @@ function CreateModal({ clients, coaches, onClose, onCreate, isCoach }) {
     const endTime = new Date(`${form.date}T${form.endHour}`).toISOString();
     if (eh * 60 + em <= sh * 60 + sm) { toast.error("L'heure de fin doit être après le début"); return; }
     if (isCoach && !form.clientId) { toast.error('Sélectionnez un client'); return; }
-    onCreate({
-      clientId: isCoach ? form.clientId : user?.id,
-      coachId: !isCoach ? (form.coachId || undefined) : undefined,
+
+    const base = {
       title: form.title,
       startTime, endTime,
       location: form.location || undefined,
       notes: form.notes || undefined,
       sessionId: form.sessionId || undefined,
-    });
+    };
+
+    if (isCoach && form.clientId === 'all') {
+      clients.forEach(c => onCreate({ ...base, clientId: c.id }));
+    } else {
+      onCreate({
+        ...base,
+        clientId: isCoach ? form.clientId : user?.id,
+        coachId: !isCoach ? (form.coachId || undefined) : undefined,
+      });
+    }
+    onClose();
   };
 
   return (
@@ -141,6 +151,7 @@ function CreateModal({ clients, coaches, onClose, onCreate, isCoach }) {
             <span className={labelText}>Client</span>
             <select className={fieldClass} value={form.clientId} onChange={e => set('clientId', e.target.value)}>
               <option value="">Sélectionner un client…</option>
+              {clients.length > 1 && <option value="all">✅ Tous les clients ({clients.length})</option>}
               {clients.map(c => <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>)}
             </select>
           </label>
@@ -250,7 +261,7 @@ export default function CalendarPage() {
 
   const create = useMutation({
     mutationFn: (data) => appointmentsApi.create(data),
-    onSuccess: () => { qc.invalidateQueries(['appointments']); setShowCreate(false); toast.success('RDV créé !'); },
+    onSuccess: () => { qc.invalidateQueries(['appointments']); toast.success('RDV créé !'); },
     onError: () => toast.error('Erreur lors de la création'),
   });
 
