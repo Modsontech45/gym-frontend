@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { socialApi } from '../services/api';
+import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { Search, UserPlus, UserCheck, Users, Sparkles } from 'lucide-react';
 
 const avatar = (u) =>
   u?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(`${u?.firstName} ${u?.lastName}`)}&background=f97316&color=fff&size=64`;
 
-function UserCard({ user, onToggle, loading }) {
+function UserCard({ user, onToggle, loading, gymName }) {
   const me = useAuthStore(s => s.user);
   if (!user || user.id === me?.id) return null;
 
@@ -15,7 +16,12 @@ function UserCard({ user, onToggle, loading }) {
     <div className="flex items-center gap-3 p-3 rounded-xl bg-dark-800 border border-dark-700 hover:border-dark-600 transition-colors">
       <img src={avatar(user)} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm leading-tight">{user.firstName} {user.lastName}</p>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <p className="font-semibold text-sm leading-tight">{user.firstName} {user.lastName}</p>
+          {gymName && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-500/20 text-primary-400 font-medium shrink-0">{gymName}</span>
+          )}
+        </div>
         <p className="text-xs text-dark-500 mt-0.5">
           {user.role === 'coach' ? '🏋️ Coach' : '👤 Membre'}
           {user.bio ? ` · ${user.bio.slice(0, 40)}${user.bio.length > 40 ? '…' : ''}` : ''}
@@ -50,6 +56,13 @@ export default function PeoplePage() {
     timer.current = setTimeout(() => setDebouncedQ(query), 350);
     return () => clearTimeout(timer.current);
   }, [query]);
+
+  const { data: gym } = useQuery({
+    queryKey: ['gym-info'],
+    queryFn: () => api.get('/gym').then(r => r.data),
+    staleTime: 300000,
+  });
+  const gymName = gym?.name || 'Amness';
 
   const { data: suggestions = [] } = useQuery({
     queryKey: ['suggestions'],
@@ -129,7 +142,7 @@ export default function PeoplePage() {
               <p className="text-dark-500">Aucun membre trouvé</p>
             </div>
           ) : suggestions.map(u => (
-            <UserCard key={u.id} user={u} onToggle={handleToggle} loading={followMut.isPending} />
+            <UserCard key={u.id} user={u} onToggle={handleToggle} loading={followMut.isPending} gymName={gymName} />
           ))}
         </div>
       )}
@@ -161,7 +174,7 @@ export default function PeoplePage() {
           ) : (
             <div className="space-y-2">
               {searchResults.map(u => (
-                <UserCard key={u.id} user={u} onToggle={handleToggle} loading={followMut.isPending} />
+                <UserCard key={u.id} user={u} onToggle={handleToggle} loading={followMut.isPending} gymName={gymName} />
               ))}
             </div>
           )}
@@ -178,7 +191,7 @@ export default function PeoplePage() {
               <button onClick={() => setTab('discover')} className="btn-primary mt-3 text-sm">Découvrir des membres</button>
             </div>
           ) : annotatedFollowing.map(u => (
-            <UserCard key={u.id} user={u} onToggle={handleToggle} loading={followMut.isPending} />
+            <UserCard key={u.id} user={u} onToggle={handleToggle} loading={followMut.isPending} gymName={gymName} />
           ))}
         </div>
       )}
@@ -192,7 +205,7 @@ export default function PeoplePage() {
               <p className="text-dark-500">Vous n'avez pas encore de followers</p>
             </div>
           ) : annotatedFollowers.map(u => (
-            <UserCard key={u.id} user={u} onToggle={handleToggle} loading={followMut.isPending} />
+            <UserCard key={u.id} user={u} onToggle={handleToggle} loading={followMut.isPending} gymName={gymName} />
           ))}
         </div>
       )}

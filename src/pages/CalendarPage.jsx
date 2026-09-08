@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { appointmentsApi, usersApi } from '../services/api';
+import { appointmentsApi, usersApi, workoutsApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { ChevronLeft, ChevronRight, Plus, X, Check, Clock, MapPin, User } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -80,93 +80,136 @@ function AppointmentModal({ appt, onClose, onConfirm, onCancel, onDelete, isCoac
   );
 }
 
-function CreateModal({ clients, onClose, onCreate, isCoach }) {
+const fieldClass = 'w-full bg-dark-700 border border-dark-600 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors';
+const labelClass = 'flex flex-col gap-1.5';
+const labelText = 'text-xs font-semibold text-dark-400 uppercase tracking-wide';
+
+function CreateModal({ clients, coaches, onClose, onCreate, isCoach }) {
   const { user } = useAuthStore();
   const [form, setForm] = useState({
     clientId: '',
-    title: 'Séance d\'entraînement',
+    coachId: '',
+    title: "Séance d'entraînement",
     date: new Date().toISOString().split('T')[0],
     startHour: '09:00',
     endHour: '10:00',
     location: '',
     notes: '',
+    sessionId: '',
   });
+
+  // For clients: load their programs to pick a session
+  const { data: programs = [] } = useQuery({
+    queryKey: ['my-programs'],
+    queryFn: () => workoutsApi.getMy().then(r => r.data),
+    enabled: !isCoach,
+  });
+  const allSessions = programs.flatMap(p =>
+    (p.sessions || []).map(s => ({ ...s, programName: p.name }))
+  );
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const submit = () => {
     const [sh, sm] = form.startHour.split(':').map(Number);
     const [eh, em] = form.endHour.split(':').map(Number);
     const startTime = new Date(`${form.date}T${form.startHour}`).toISOString();
     const endTime = new Date(`${form.date}T${form.endHour}`).toISOString();
-    if (eh * 60 + em <= sh * 60 + sm) { toast.error('L\'heure de fin doit être après le début'); return; }
+    if (eh * 60 + em <= sh * 60 + sm) { toast.error("L'heure de fin doit être après le début"); return; }
     if (isCoach && !form.clientId) { toast.error('Sélectionnez un client'); return; }
     onCreate({
-      clientId: isCoach ? form.clientId : undefined,
+      clientId: isCoach ? form.clientId : user?.id,
+      coachId: !isCoach ? (form.coachId || undefined) : undefined,
       title: form.title,
       startTime, endTime,
       location: form.location || undefined,
       notes: form.notes || undefined,
+      sessionId: form.sessionId || undefined,
     });
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
-      <div className="bg-base-200 rounded-2xl w-full max-w-md p-5 space-y-3">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="font-bold">Nouveau rendez-vous</h3>
-          <button onClick={onClose} className="btn btn-ghost btn-sm btn-circle"><X size={16} /></button>
+    <div className="fixed inset-0 bg-black/70 flex items-end sm:items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-dark-800 border border-dark-700 rounded-2xl w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-lg">Nouveau rendez-vous</h3>
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-dark-700 text-dark-400"><X size={18} /></button>
         </div>
 
         {isCoach && (
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Client</span>
-            <select className="select select-bordered select-sm" value={form.clientId}
-              onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}>
-              <option value="">Sélectionner…</option>
+          <label className={labelClass}>
+            <span className={labelText}>Client</span>
+            <select className={fieldClass} value={form.clientId} onChange={e => set('clientId', e.target.value)}>
+              <option value="">Sélectionner un client…</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>)}
             </select>
           </label>
         )}
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Titre</span>
-          <input className="input input-bordered input-sm" value={form.title}
-            onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+        {!isCoach && coaches.length > 0 && (
+          <label className={labelClass}>
+            <span className={labelText}>Coach (optionnel)</span>
+            <select className={fieldClass} value={form.coachId} onChange={e => set('coachId', e.target.value)}>
+              <option value="">Sélectionner un coach…</option>
+              {coaches.map(c => <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>)}
+            </select>
+          </label>
+        )}
+
+        {!isCoach && allSessions.length > 0 && (
+          <label className={labelClass}>
+            <span className={labelText}>Programme / Séance (optionnel)</span>
+            <select
+              className={fieldClass}
+              value={form.sessionId}
+              onChange={e => {
+                const s = allSessions.find(s => s.id === e.target.value);
+                set('sessionId', e.target.value);
+                if (s) set('title', s.name);
+              }}
+            >
+              <option value="">Choisir une séance…</option>
+              {allSessions.map(s => (
+                <option key={s.id} value={s.id}>{s.programName} — {s.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        <label className={labelClass}>
+          <span className={labelText}>Titre</span>
+          <input className={fieldClass} value={form.title} onChange={e => set('title', e.target.value)} />
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Date</span>
-          <input type="date" className="input input-bordered input-sm" value={form.date}
-            onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+        <label className={labelClass}>
+          <span className={labelText}>Date</span>
+          <input type="date" className={fieldClass} value={form.date} onChange={e => set('date', e.target.value)} />
         </label>
 
         <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Début</span>
-            <input type="time" className="input input-bordered input-sm" value={form.startHour}
-              onChange={e => setForm(f => ({ ...f, startHour: e.target.value }))} />
+          <label className={labelClass}>
+            <span className={labelText}>Début</span>
+            <input type="time" className={fieldClass} value={form.startHour} onChange={e => set('startHour', e.target.value)} />
           </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Fin</span>
-            <input type="time" className="input input-bordered input-sm" value={form.endHour}
-              onChange={e => setForm(f => ({ ...f, endHour: e.target.value }))} />
+          <label className={labelClass}>
+            <span className={labelText}>Fin</span>
+            <input type="time" className={fieldClass} value={form.endHour} onChange={e => set('endHour', e.target.value)} />
           </label>
         </div>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Lieu (optionnel)</span>
-          <input className="input input-bordered input-sm" placeholder="Salle, adresse…" value={form.location}
-            onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+        <label className={labelClass}>
+          <span className={labelText}>Lieu (optionnel)</span>
+          <input className={fieldClass} placeholder="Salle, adresse…" value={form.location} onChange={e => set('location', e.target.value)} />
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Notes (optionnel)</span>
-          <textarea className="textarea textarea-bordered textarea-sm" rows={2} value={form.notes}
-            onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+        <label className={labelClass}>
+          <span className={labelText}>Notes (optionnel)</span>
+          <textarea className={`${fieldClass} resize-none`} rows={2} value={form.notes} onChange={e => set('notes', e.target.value)} />
         </label>
 
-        <div className="flex gap-2 pt-1">
-          <button onClick={onClose} className="btn btn-ghost btn-sm flex-1">Annuler</button>
-          <button onClick={submit} className="btn btn-primary btn-sm flex-1">Créer</button>
+        <div className="flex gap-3 pt-1">
+          <button onClick={onClose} className="btn-secondary flex-1">Annuler</button>
+          <button onClick={submit} className="btn-primary flex-1">Créer</button>
         </div>
       </div>
     </div>
@@ -196,6 +239,13 @@ export default function CalendarPage() {
     queryKey: ['clients'],
     queryFn: () => usersApi.getClients().then(r => r.data),
     enabled: isCoach,
+  });
+
+  // For client creating appointment: need to pick which coach
+  const { data: coaches = [] } = useQuery({
+    queryKey: ['coaches'],
+    queryFn: () => usersApi.getCoaches().then(r => r.data),
+    enabled: !isCoach,
   });
 
   const create = useMutation({
@@ -360,6 +410,7 @@ export default function CalendarPage() {
       {showCreate && (
         <CreateModal
           clients={clients}
+          coaches={coaches}
           isCoach={isCoach}
           onClose={() => setShowCreate(false)}
           onCreate={(data) => create.mutate(data)}

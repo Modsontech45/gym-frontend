@@ -83,7 +83,10 @@ function NewConvModal({ onClose, onStart }) {
                   className="w-10 h-10 rounded-full object-cover shrink-0"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{u.firstName} {u.lastName}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium text-sm">{u.firstName} {u.lastName}</p>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-500/20 text-primary-400 font-medium shrink-0">Amness</span>
+                  </div>
                   <p className="text-xs text-dark-500 capitalize">{u.role === 'coach' ? '🏋️ Coach' : '👤 Membre'}</p>
                 </div>
               </button>
