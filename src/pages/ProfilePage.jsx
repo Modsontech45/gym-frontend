@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation } from '@tanstack/react-query';
-import { authApi } from '../services/api';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { authApi, socialApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -16,6 +16,15 @@ export default function ProfilePage() {
   const fileRef = useRef();
   const { register, handleSubmit } = useForm({ defaultValues: { firstName: user?.firstName, lastName: user?.lastName, phone: user?.phone, bio: user?.bio, fitnessGoal: user?.fitnessGoal, experienceLevel: user?.experienceLevel, language: user?.language } });
   const { register: registerPwd, handleSubmit: handlePwdSubmit, reset: resetPwd } = useForm();
+
+  const { data: followers = [] } = useQuery({
+    queryKey: ['followers'],
+    queryFn: () => socialApi.getFollowers().then(r => r.data),
+  });
+  const { data: following = [] } = useQuery({
+    queryKey: ['following'],
+    queryFn: () => socialApi.getFollowing().then(r => r.data),
+  });
 
   const updateProfile = useMutation({
     mutationFn: (data) => {
@@ -58,6 +67,18 @@ export default function ProfilePage() {
         </div>
         <h2 className="text-xl font-bold">{user?.firstName} {user?.lastName}</h2>
         <p className="text-dark-500 capitalize">{user?.role} · {user?.email}</p>
+        {/* Follower / following counts */}
+        <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-dark-700 w-full">
+          <div className="text-center">
+            <p className="text-xl font-bold text-white">{followers.length}</p>
+            <p className="text-xs text-dark-500">Followers</p>
+          </div>
+          <div className="w-px h-8 bg-dark-700" />
+          <div className="text-center">
+            <p className="text-xl font-bold text-white">{following.length}</p>
+            <p className="text-xs text-dark-500">Abonnements</p>
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-2">

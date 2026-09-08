@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { productsApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { ShoppingBag, Plus, Pencil, Trash2, X, Save, Tag, Package } from 'lucide-react';
+import { ShoppingBag, Plus, Pencil, Trash2, X, Save, Tag, Package, Link, Upload, Image } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CATEGORIES = ['protéine', 'créatine', 'brûleur', 'vêtements', 'équipement', 'accessoires', 'autre'];
@@ -13,6 +13,12 @@ const pct = (orig, cur) => Math.round((1 - cur / orig) * 100);
 
 function ProductFormModal({ product, onClose, onSaved }) {
   const isEdit = !!product;
+  const fileRef = useRef();
+  const [imageMode, setImageMode] = useState(product?.image?.startsWith('http') || !product ? 'url' : 'upload');
+  const [filePreview, setFilePreview] = useState(product?.image || null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [dragging, setDragging] = useState(false);
+
   const [form, setForm] = useState({
     name: product?.name || '',
     description: product?.description || '',
@@ -25,18 +31,54 @@ function ProductFormModal({ product, onClose, onSaved }) {
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const create = useMutation({ mutationFn: productsApi.create, onSuccess: onSaved, onError: () => toast.error('Erreur') });
-  const update = useMutation({ mutationFn: ({ id, data }) => productsApi.update(id, data), onSuccess: onSaved, onError: () => toast.error('Erreur') });
+  const create = useMutation({ mutationFn: productsApi.create, onSuccess: onSaved, onError: () => toast.error('Erreur lors de la création') });
+  const update = useMutation({ mutationFn: ({ id, data }) => productsApi.update(id, data), onSuccess: onSaved, onError: () => toast.error('Erreur lors de la mise à jour') });
+
+  const handleFile = (file) => {
+    if (!file || !file.type.startsWith('image/')) return toast.error('Fichier image uniquement');
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setFilePreview(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  };
+
+  const buildFormData = () => {
+    const fd = new FormData();
+    fd.append('name', form.name);
+    fd.append('category', form.category);
+    fd.append('originalPrice', form.originalPrice);
+    fd.append('currentPrice', form.currentPrice);
+    fd.append('currency', form.currency);
+    fd.append('inStock', form.inStock);
+    if (form.description) fd.append('description', form.description);
+    if (imageMode === 'file' && selectedFile) {
+      fd.append('image', selectedFile);
+    } else if (imageMode === 'url' && form.image) {
+      fd.append('image', form.image);
+    } else if (isEdit && product?.image && !selectedFile) {
+      fd.append('image', product.image);
+    }
+    return fd;
+  };
 
   const submit = () => {
     if (!form.name.trim()) return toast.error('Le nom est requis');
     if (!form.originalPrice || !form.currentPrice) return toast.error('Les prix sont requis');
     if (Number(form.currentPrice) > Number(form.originalPrice)) return toast.error('Le prix actuel doit être ≤ au prix original');
-    if (isEdit) update.mutate({ id: product.id, data: form });
-    else create.mutate(form);
+    const fd = buildFormData();
+    if (isEdit) update.mutate({ id: product.id, data: fd });
+    else create.mutate(fd);
   };
 
   const isPending = create.isPending || update.isPending;
+  const previewSrc = imageMode === 'url' ? form.image : filePreview;
 
   const fieldCls = 'w-full bg-dark-700 border border-dark-600 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary-500 transition-colors';
 
@@ -66,11 +108,82 @@ function ProductFormModal({ product, onClose, onSaved }) {
             <textarea className={`${fieldCls} resize-none`} rows={2} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Ingrédients, dosage, avantages…" />
           </div>
 
+          {/* Image field — URL or Upload */}
           <div>
-            <label className="text-xs font-semibold text-dark-400 uppercase tracking-wide mb-1.5 block">Image (URL)</label>
-            <input className={fieldCls} value={form.image} onChange={e => set('image', e.target.value)} placeholder="https://…" />
-            {form.image && (
-              <img src={form.image} alt="" className="mt-2 w-full h-32 object-contain rounded-xl bg-dark-700" onError={e => e.target.style.display='none'} />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-dark-400 uppercase tracking-wide">Image du produit</label>
+              {/* Tab toggle */}
+              <div className="flex gap-1 bg-dark-700 rounded-lg p-0.5">
+                <button
+                  type="button"
+                  onClick={() => { setImageMode('url'); setSelectedFile(null); }}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${imageMode === 'url' ? 'bg-primary-500 text-white' : 'text-dark-400 hover:text-white'}`}
+                >
+                  <Link size={11} /> Lien URL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageMode('file')}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${imageMode === 'file' ? 'bg-primary-500 text-white' : 'text-dark-400 hover:text-white'}`}
+                >
+                  <Upload size={11} /> Télécharger
+                </button>
+              </div>
+            </div>
+
+            {imageMode === 'url' ? (
+              <input
+                className={fieldCls}
+                value={form.image}
+                onChange={e => set('image', e.target.value)}
+                placeholder="https://exemple.com/image.jpg"
+              />
+            ) : (
+              <div
+                onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={onDrop}
+                onClick={() => fileRef.current.click()}
+                className={`relative w-full border-2 border-dashed rounded-xl cursor-pointer transition-colors text-center py-6 ${
+                  dragging ? 'border-primary-400 bg-primary-500/10' : 'border-dark-600 hover:border-primary-500/50 hover:bg-dark-700/50'
+                }`}
+              >
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={e => e.target.files[0] && handleFile(e.target.files[0])}
+                />
+                {selectedFile ? (
+                  <p className="text-sm text-primary-400 font-medium">{selectedFile.name}</p>
+                ) : (
+                  <>
+                    <Image size={28} className="mx-auto mb-2 text-dark-500" />
+                    <p className="text-sm text-dark-400">Glisser-déposer ou <span className="text-primary-400">parcourir</span></p>
+                    <p className="text-xs text-dark-600 mt-1">JPG, PNG, WEBP · max 10 Mo</p>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Preview */}
+            {previewSrc && (
+              <div className="mt-2 relative">
+                <img
+                  src={previewSrc}
+                  alt="Aperçu"
+                  className="w-full h-40 object-contain rounded-xl bg-dark-700"
+                  onError={e => e.target.style.display = 'none'}
+                />
+                <button
+                  type="button"
+                  onClick={() => { set('image', ''); setFilePreview(null); setSelectedFile(null); }}
+                  className="absolute top-2 right-2 p-1 bg-dark-900/80 rounded-full text-dark-400 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             )}
           </div>
 

@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { messagesApi, socialApi } from '../services/api';
+import { messagesApi, socialApi, postsApi } from '../services/api';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import Avatar from '../components/common/Avatar';
-import { Send, ArrowLeft, MessageCircle, Edit, Search, X } from 'lucide-react';
+import { Send, ArrowLeft, MessageCircle, Edit, Search, X, Lock, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 // ── New conversation modal ────────────────────────────────────────────────────
 
 function NewConvModal({ onClose, onStart }) {
+  const { user: me } = useAuthStore();
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const timer = useRef(null);
@@ -38,6 +40,13 @@ function NewConvModal({ onClose, onStart }) {
   });
 
   const people = debouncedQ.length >= 2 ? searchResults : suggestions;
+
+  // A client can only message coaches/admins or people they follow
+  const canMessage = (u) => {
+    if (!me || me.role !== 'client') return true; // coaches/admins can message anyone
+    if (u.role === 'coach' || u.role === 'admin') return true;
+    return u.isFollowing; // client-to-client only if following
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-end md:items-center justify-center p-4" onClick={onClose}>
@@ -71,11 +80,16 @@ function NewConvModal({ onClose, onStart }) {
               {debouncedQ.length >= 2 ? `Aucun résultat pour « ${q} »` : 'Aucun membre trouvé'}
             </div>
           ) : (
-            people.map(u => (
+            people.map(u => {
+              const allowed = canMessage(u);
+              return (
               <button
                 key={u.id}
-                onClick={() => onStart(u)}
-                className="w-full flex items-center gap-3 p-3 hover:bg-dark-700 transition-colors text-left"
+                onClick={() => {
+                  if (!allowed) { toast.error('Suivez cette personne pour lui envoyer un message'); return; }
+                  onStart(u);
+                }}
+                className={`w-full flex items-center gap-3 p-3 transition-colors text-left ${allowed ? 'hover:bg-dark-700' : 'opacity-60 cursor-default'}`}
               >
                 <img
                   src={u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(`${u.firstName} ${u.lastName}`)}&background=f97316&color=fff&size=64`}
@@ -89,8 +103,10 @@ function NewConvModal({ onClose, onStart }) {
                   </div>
                   <p className="text-xs text-dark-500 capitalize">{u.role === 'coach' ? '🏋️ Coach' : '👤 Membre'}</p>
                 </div>
+                {!allowed && <Lock size={14} className="text-dark-600 shrink-0" />}
               </button>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -138,6 +154,11 @@ export default function MessagesPage() {
       queryClient.invalidateQueries(['messages', otherId]);
       queryClient.invalidateQueries(['conversations']);
       setText('');
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.message;
+      if (msg) toast.error(msg);
+      else toast.error('Impossible d\'envoyer le message');
     },
   });
 

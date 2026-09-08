@@ -86,6 +86,8 @@ export const postsApi = {
   getComments: (id) => api.get(`/posts/${id}/comments`),
   addComment: (id, content) => api.post(`/posts/${id}/comments`, { content }),
   deleteComment: (postId, commentId) => api.delete(`/posts/${postId}/comments/${commentId}`),
+  view: (id) => api.post(`/posts/${id}/view`),
+  play: (id) => api.post(`/posts/${id}/play`),
 };
 
 // Workouts
@@ -205,8 +207,8 @@ export const gymProgramsApi = {
 // Gym shop / products
 export const productsApi = {
   list: () => api.get('/products'),
-  create: (data) => api.post('/products', data),
-  update: (id, data) => api.put(`/products/${id}`, data),
+  create: (data) => api.post('/products', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  update: (id, data) => api.put(`/products/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   delete: (id) => api.delete(`/products/${id}`),
 };
 

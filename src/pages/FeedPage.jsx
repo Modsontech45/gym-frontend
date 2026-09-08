@@ -1,13 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { postsApi, messagesApi } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { postsApi, messagesApi, socialApi, productsApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import Avatar from '../components/common/Avatar';
 import {
   Heart, MessageCircle, X,
   Dumbbell, TrendingUp, Trophy, Zap, MessageSquare,
   MoreHorizontal, Trash2, Share2, Link, Reply, Send,
+  UserPlus, UserCheck, Eye, Play, ShoppingBag, Tag,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -20,6 +22,9 @@ const POST_TYPES = [
   { value: 'achievement', label: 'Réussite',     Icon: Trophy },
   { value: 'motivation',  label: 'Motivation',   Icon: Zap },
 ];
+
+const fmt = (n) => Number(n).toLocaleString('fr-FR');
+const viewedSet = new Set(); // module-level — survives re-renders, cleared on page refresh
 
 // ─── Confirm Delete Modal ─────────────────────────────────────────────────────
 
@@ -60,7 +65,6 @@ function ShareModal({ post, onClose }) {
   const copyLink = () => {
     const url = `${window.location.origin}/feed?post=${post.id}`;
     navigator.clipboard.writeText(url).then(() => toast.success('Lien copié !')).catch(() => {
-      // fallback
       const el = document.createElement('textarea');
       el.value = url;
       document.body.appendChild(el);
@@ -97,8 +101,6 @@ function ShareModal({ post, onClose }) {
           <p className="font-semibold text-white">Partager</p>
           <button onClick={onClose} className="text-dark-500 hover:text-white"><X size={18} /></button>
         </div>
-
-        {/* Copy link */}
         <button onClick={copyLink}
           className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-dark-700 transition-colors text-sm border-b border-dark-700">
           <div className="w-9 h-9 rounded-full bg-dark-700 flex items-center justify-center shrink-0">
@@ -106,8 +108,6 @@ function ShareModal({ post, onClose }) {
           </div>
           <span className="font-medium text-white">Copier le lien</span>
         </button>
-
-        {/* Send to DM */}
         <div className="px-4 py-3">
           <p className="text-xs text-dark-500 mb-2">Envoyer en message privé</p>
           {conversations.length > 0 && (
@@ -126,16 +126,11 @@ function ShareModal({ post, onClose }) {
                 <span className="text-sm text-white flex-1">{contact.firstName} {contact.lastName}</span>
                 {sent === contact.id
                   ? <span className="text-xs text-green-400">Envoyé</span>
-                  : sending === contact.id
-                    ? <span className="text-xs text-dark-500">…</span>
-                    : null}
+                  : sending === contact.id ? <span className="text-xs text-dark-500">…</span> : null}
               </button>
             ))}
             {conversations.length === 0 && (
               <p className="text-xs text-dark-500 text-center py-4">Aucun contact. Commencez une conversation d'abord.</p>
-            )}
-            {conversations.length > 0 && contacts.length === 0 && (
-              <p className="text-xs text-dark-500 text-center py-2">Aucun résultat</p>
             )}
           </div>
         </div>
@@ -184,18 +179,29 @@ function PostMenu({ canDelete, onDelete, onShare }) {
 
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-function PostCard({ post, onLike, onComment, onDelete, onDeleteComment }) {
+function PostCard({ post, onLike, onComment, onDelete, onDeleteComment, onFollow }) {
   const { user } = useAuthStore();
   const [showComments, setShowComments] = useState(false);
   const [comment, setComment] = useState('');
-  const [replyTo, setReplyTo] = useState(null); // { name }
+  const [replyTo, setReplyTo] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [confirmDeleteComment, setConfirmDeleteComment] = useState(null); // commentId
+  const [confirmDeleteComment, setConfirmDeleteComment] = useState(null);
   const [showShare, setShowShare] = useState(false);
+  const [localViews, setLocalViews] = useState(post.viewCount || 0);
+  const [localPlays, setLocalPlays] = useState(post.playCount || 0);
   const inputRef = useRef();
 
-  const canDelete = user?.id === post.author?.id || user?.role === 'admin';
+  const isOwn = user?.id === post.author?.id;
+  const canDelete = isOwn || user?.role === 'admin';
   const typeInfo = POST_TYPES.find(t => t.value === post.postType);
+  const isCoachOrAdmin = ['coach', 'admin'].includes(post.author?.role);
+
+  // Track view once per session
+  useEffect(() => {
+    if (!post.id || viewedSet.has(post.id)) return;
+    viewedSet.add(post.id);
+    postsApi.view(post.id).then(() => setLocalViews(v => v + 1)).catch(() => {});
+  }, [post.id]);
 
   const { data: comments = [], refetch } = useQuery({
     queryKey: ['comments', post.id],
@@ -219,6 +225,10 @@ function PostCard({ post, onLike, onComment, onDelete, onDeleteComment }) {
     setTimeout(refetch, 500);
   };
 
+  const handlePlay = () => {
+    postsApi.play(post.id).then(() => setLocalPlays(v => v + 1)).catch(() => {});
+  };
+
   const isReplyComment = (text) => text?.startsWith('@');
 
   return (
@@ -228,7 +238,29 @@ function PostCard({ post, onLike, onComment, onDelete, onDeleteComment }) {
         <div className="flex items-center gap-3 mb-3">
           <Avatar user={post.author} size="md" />
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate">{post.author?.firstName} {post.author?.lastName}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-sm">{post.author?.firstName} {post.author?.lastName}</p>
+              {isCoachOrAdmin && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-500/20 text-primary-400 font-medium">
+                  {post.author?.role === 'admin' ? 'Admin' : 'Coach'}
+                </span>
+              )}
+              {/* Follow button — only for other people's posts */}
+              {!isOwn && (
+                <button
+                  onClick={() => onFollow(post.author)}
+                  className={`flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-semibold transition-all ${
+                    post.author?.isFollowing
+                      ? 'bg-dark-700 text-dark-400 hover:text-red-400 hover:bg-dark-600'
+                      : 'bg-primary-500/20 text-primary-400 hover:bg-primary-500/30'
+                  }`}
+                >
+                  {post.author?.isFollowing
+                    ? <><UserCheck size={11} /> Suivi</>
+                    : <><UserPlus size={11} /> Suivre</>}
+                </button>
+              )}
+            </div>
             <p className="text-xs text-dark-500">
               {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: fr })}
             </p>
@@ -253,7 +285,13 @@ function PostCard({ post, onLike, onComment, onDelete, onDeleteComment }) {
           <img src={post.mediaUrl} alt="" className="w-full rounded-xl mb-3" />
         )}
         {post.mediaUrl && post.mediaType === 'video' && (
-          <video src={post.mediaUrl} controls className="w-full rounded-xl mb-3" style={{ maxHeight: '70vh' }} />
+          <video
+            src={post.mediaUrl}
+            controls
+            onPlay={handlePlay}
+            className="w-full rounded-xl mb-3"
+            style={{ maxHeight: '70vh' }}
+          />
         )}
 
         {/* Actions */}
@@ -272,11 +310,12 @@ function PostCard({ post, onLike, onComment, onDelete, onDeleteComment }) {
             className="flex items-center gap-1.5 text-sm text-dark-500 hover:text-primary-400 transition-colors">
             <Share2 size={17} />
           </button>
-          {typeInfo && post.postType !== 'general' && (
-            <span className="sm:hidden ml-auto flex items-center gap-1 text-xs text-primary-400">
-              <typeInfo.Icon size={11} /> {typeInfo.label}
-            </span>
-          )}
+          <div className="ml-auto flex items-center gap-3 text-dark-600 text-xs">
+            <span className="flex items-center gap-1"><Eye size={13} /> {localViews}</span>
+            {post.mediaType === 'video' && (
+              <span className="flex items-center gap-1"><Play size={12} /> {localPlays}</span>
+            )}
+          </div>
         </div>
 
         {/* Comments */}
@@ -288,9 +327,9 @@ function PostCard({ post, onLike, onComment, onDelete, onDeleteComment }) {
               <div key={c.id} className="flex gap-2 group">
                 <Avatar user={c.author} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <div className={`rounded-xl px-3 py-2 ${isReplyComment(c.content) ? 'bg-primary-500/10 border border-primary-500/20' : 'bg-dark-700'}`}>
+                  <div className={`rounded-xl px-3 py-2 ${c.content?.startsWith('@') ? 'bg-primary-500/10 border border-primary-500/20' : 'bg-dark-700'}`}>
                     <p className="text-xs font-medium text-primary-400">{c.author?.firstName} {c.author?.lastName}</p>
-                    {isReplyComment(c.content) ? (
+                    {c.content?.startsWith('@') ? (
                       <p className="text-sm mt-0.5">
                         <span className="text-primary-400 font-medium">{c.content.split(' ')[0]}</span>
                         {' ' + c.content.split(' ').slice(1).join(' ')}
@@ -318,7 +357,6 @@ function PostCard({ post, onLike, onComment, onDelete, onDeleteComment }) {
               );
             })}
 
-            {/* Reply indicator */}
             {replyTo && (
               <div className="flex items-center gap-2 bg-primary-500/10 rounded-lg px-3 py-1.5 text-xs text-primary-400">
                 <Reply size={12} />
@@ -345,7 +383,6 @@ function PostCard({ post, onLike, onComment, onDelete, onDeleteComment }) {
         )}
       </div>
 
-      {/* Modals */}
       {confirmDelete && (
         <ConfirmModal
           onConfirm={() => { onDelete(post.id); setConfirmDelete(false); }}
@@ -373,17 +410,107 @@ function PostCard({ post, onLike, onComment, onDelete, onDeleteComment }) {
   );
 }
 
+// ─── Product Feed Card ────────────────────────────────────────────────────────
+
+function ProductFeedCard({ product }) {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const isCoach = ['admin', 'coach'].includes(user?.role);
+  const hasDiscount = Number(product.currentPrice) < Number(product.originalPrice);
+  const discount = hasDiscount ? Math.round((1 - product.currentPrice / product.originalPrice) * 100) : 0;
+
+  const handleBuy = () => {
+    const sellerId = product.seller?.id || product.coachId;
+    const msg = encodeURIComponent(
+      `Bonjour, je suis intéressé(e) par :\n*${product.name}* — ${fmt(product.currentPrice)} ${product.currency}\n${product.image || ''}`
+    );
+    navigate(`/messages/${sellerId}?prefill=${msg}`);
+  };
+
+  return (
+    <div className="card animate-fade-in border-primary-500/10">
+      {/* Header like a post */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center shrink-0">
+          <ShoppingBag size={18} className="text-primary-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-sm">{product.seller?.firstName} {product.seller?.lastName}</p>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-500/20 text-primary-400 font-medium">Boutique</span>
+          </div>
+          <p className="text-xs text-dark-500">
+            {formatDistanceToNow(new Date(product.createdAt), { addSuffix: true, locale: fr })}
+          </p>
+        </div>
+        <button onClick={() => navigate('/boutique')} className="text-xs text-primary-400 hover:text-primary-300 transition-colors">
+          Voir tout
+        </button>
+      </div>
+
+      {/* Product image */}
+      {product.image && (
+        <img src={product.image} alt={product.name} className="w-full rounded-xl mb-3 max-h-64 object-cover" />
+      )}
+
+      {/* Product info */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] text-primary-400 uppercase tracking-wide font-medium mb-0.5 capitalize">{product.category}</p>
+          <p className="font-semibold text-sm">{product.name}</p>
+          {product.description && <p className="text-xs text-dark-500 mt-1 line-clamp-2">{product.description}</p>}
+          <div className="flex items-center gap-2 mt-2">
+            <span className="font-bold text-white">{fmt(product.currentPrice)} <span className="text-xs font-normal text-dark-400">{product.currency}</span></span>
+            {hasDiscount && (
+              <>
+                <span className="text-sm text-dark-500 line-through">{fmt(product.originalPrice)}</span>
+                <span className="text-xs bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5">
+                  <Tag size={10} /> -{discount}%
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+        {!isCoach && (
+          <button
+            onClick={handleBuy}
+            disabled={!product.inStock}
+            className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              product.inStock ? 'bg-primary-500 hover:bg-primary-400 text-white' : 'bg-dark-700 text-dark-500 cursor-not-allowed'
+            }`}
+          >
+            <ShoppingBag size={14} />
+            {product.inStock ? 'Acheter' : 'Rupture'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function FeedPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+
   const { data, isFetching } = useQuery({
     queryKey: ['feed'],
     queryFn: () => postsApi.getFeed({ page: 1, limit: 20 }).then(r => r.data),
   });
 
-  const posts = data?.posts || [];
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => productsApi.list().then(r => r.data),
+    staleTime: 60000,
+  });
+
+  // Merge posts + products sorted by date, newest first
+  const feedItems = useMemo(() => {
+    const posts = (data?.posts || []).map(p => ({ ...p, _type: 'post' }));
+    const prods = products.map(p => ({ ...p, _type: 'product' }));
+    return [...posts, ...prods].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [data?.posts, products]);
 
   const deletePost = useMutation({
     mutationFn: (id) => postsApi.delete(id),
@@ -410,19 +537,37 @@ export default function FeedPage() {
     onError: () => toast.error('Erreur lors de la suppression'),
   });
 
+  const followMut = useMutation({
+    mutationFn: ({ id, isFollowing }) =>
+      isFollowing ? socialApi.unfollow(id) : socialApi.follow(id),
+    onSuccess: () => queryClient.invalidateQueries(['feed']),
+  });
+
+  const handleFollow = (author) => {
+    if (!author?.id) return;
+    followMut.mutate({ id: author.id, isFollowing: author.isFollowing });
+  };
+
   return (
     <div className="max-w-2xl mx-auto space-y-4 pb-20 md:pb-0 animate-fade-in">
-      {/* Feed */}
-      {posts.map(post => (
-        <PostCard key={post.id} post={post}
-          onLike={(id) => likePost.mutate(id)}
-          onDelete={(id) => deletePost.mutate(id)}
-          onComment={(postId, content) => addComment.mutate({ postId, content })}
-          onDeleteComment={(postId, commentId) => deleteComment.mutate({ postId, commentId })} />
-      ))}
+      {feedItems.map(item =>
+        item._type === 'product' ? (
+          <ProductFeedCard key={`prod-${item.id}`} product={item} />
+        ) : (
+          <PostCard
+            key={item.id}
+            post={item}
+            onLike={(id) => likePost.mutate(id)}
+            onDelete={(id) => deletePost.mutate(id)}
+            onComment={(postId, content) => addComment.mutate({ postId, content })}
+            onDeleteComment={(postId, commentId) => deleteComment.mutate({ postId, commentId })}
+            onFollow={handleFollow}
+          />
+        )
+      )}
 
       {isFetching && <div className="text-center text-dark-500 py-4">{t('loading')}</div>}
-      {posts.length === 0 && !isFetching && (
+      {feedItems.length === 0 && !isFetching && (
         <div className="card text-center py-12">
           <Dumbbell size={48} className="text-dark-700 mx-auto mb-3" />
           <p className="text-dark-500">Aucune publication. Soyez le premier !</p>
