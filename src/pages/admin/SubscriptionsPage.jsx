@@ -51,9 +51,85 @@ function Field({ label, children }) {
 
 // ─── Tab: Abonnements ─────────────────────────────────────────────────────────
 
+function EditSubModal({ sub, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    planName: sub.planName || '',
+    status: sub.status || 'actif',
+    balance: sub.balance ?? '',
+    sessionsIncluded: sub.sessionsIncluded ?? '',
+    sessionsUsed: sub.sessionsUsed ?? '',
+    startDate: sub.startDate || '',
+    endDate: sub.endDate || '',
+    notes: sub.notes || '',
+  });
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const mutation = useMutation({
+    mutationFn: () => subsApi.update(sub.id, form),
+    onSuccess: onSaved,
+    onError: (err) => toast.error(err.response?.data?.message || 'Erreur'),
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-dark-800 rounded-2xl w-full max-w-md border border-dark-700 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-dark-700">
+          <div>
+            <h2 className="font-bold">Modifier l'abonnement</h2>
+            <p className="text-xs text-dark-500 mt-0.5">{sub.user?.firstName} {sub.user?.lastName}</p>
+          </div>
+          <button onClick={onClose} className="text-dark-400 hover:text-white"><X size={18} /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          <Field label="Forfait (nom)">
+            <input value={form.planName} onChange={e => set('planName', e.target.value)} className="input w-full" />
+          </Field>
+          <Field label="Statut">
+            <select value={form.status} onChange={e => set('status', e.target.value)} className="input w-full">
+              <option value="en_attente">En attente</option>
+              <option value="actif">Actif</option>
+              <option value="suspendu">Suspendu</option>
+              <option value="expire">Expiré</option>
+              <option value="annule">Annulé</option>
+            </select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Solde (FCFA)">
+              <input type="number" value={form.balance} min={0} onChange={e => set('balance', e.target.value)} className="input w-full" />
+            </Field>
+            <Field label="Séances incluses">
+              <input type="number" value={form.sessionsIncluded} min={0} onChange={e => set('sessionsIncluded', e.target.value)} className="input w-full" />
+            </Field>
+            <Field label="Séances utilisées">
+              <input type="number" value={form.sessionsUsed} min={0} onChange={e => set('sessionsUsed', e.target.value)} className="input w-full" />
+            </Field>
+            <Field label="Date de début">
+              <input type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} className="input w-full" />
+            </Field>
+            <Field label="Date de fin" >
+              <input type="date" value={form.endDate} onChange={e => set('endDate', e.target.value)} className="input w-full" />
+            </Field>
+          </div>
+          <Field label="Notes">
+            <textarea value={form.notes} onChange={e => set('notes', e.target.value)}
+              className="input w-full resize-none h-20" placeholder="Remarques…" />
+          </Field>
+        </div>
+        <div className="p-5 border-t border-dark-700 flex gap-3">
+          <button onClick={onClose} className="btn-secondary flex-1">Annuler</button>
+          <button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="btn-primary flex-1">
+            {mutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AbonnementsTab({ clients, plans }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [editSub, setEditSub] = useState(null);
   const [creditId, setCreditId] = useState(null);
   const [creditAmount, setCreditAmount] = useState('');
 
@@ -318,9 +394,15 @@ function AbonnementsTab({ clients, plans }) {
                 <button onClick={() => setCreditId(null)} className="btn-secondary text-sm px-3"><X size={14} /></button>
               </div>
             ) : (
-              <button onClick={() => setCreditId(sub.id)} className="mt-2 text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
-                <Plus size={12} /> Créditer le solde
-              </button>
+              <div className="flex items-center gap-3 mt-2">
+                <button onClick={() => setCreditId(sub.id)} className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
+                  <Plus size={12} /> Créditer le solde
+                </button>
+                <span className="text-dark-700">·</span>
+                <button onClick={() => setEditSub(sub)} className="text-xs text-dark-400 hover:text-white flex items-center gap-1">
+                  <Edit2 size={12} /> Modifier
+                </button>
+              </div>
             )}
           </div>
         ))}
@@ -328,6 +410,18 @@ function AbonnementsTab({ clients, plans }) {
           <div className="card text-center py-10 text-dark-500">Aucun abonnement actif</div>
         )}
       </div>
+
+      {editSub && (
+        <EditSubModal
+          sub={editSub}
+          onClose={() => setEditSub(null)}
+          onSaved={() => {
+            queryClient.invalidateQueries(['subscriptions']);
+            setEditSub(null);
+            toast.success('Abonnement modifié !');
+          }}
+        />
+      )}
     </div>
   );
 }
